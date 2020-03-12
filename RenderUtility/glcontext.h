@@ -9,6 +9,7 @@
 
 #include "Geometry/squareplane.h"
 #include "shaderprogram.h"
+#include "camera.h"
 
 class GLContext: public QOpenGLWidget, public QOpenGLFunctions_3_2_Core
 {
@@ -25,6 +26,8 @@ public:
     SquarePlane squarePlane;
 
     ShaderProgram shaderProgram;
+
+    Camera camera;
 
 private:
     QTimer timer; // controls frame rate

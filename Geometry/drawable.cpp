@@ -7,6 +7,11 @@ Drawable::Drawable(GLContext *context)
 
 }
 
+glm::mat4 Drawable::getModel()
+{
+    return glm::mat4(1.f);
+}
+
 void Drawable::create()
 {
     if (indexBuffer.size() == 0) return;

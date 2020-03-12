@@ -12,11 +12,15 @@ public:
     void create(const char *vertexFile, const char *fragmentFile);
     void draw(Drawable &drawable);
 
-    GLuint hVertexShader, hFragmentShader, hProgram;
-
-    int attrPosition, attrColor, attrNormal;
+    void setModelViewProj(glm::mat4 viewProj, glm::mat4 model = glm::mat4(1.f));
 
     inline void useMe();
+
+    GLuint hVertexShader, hFragmentShader, hProgram;
+
+    // handles to the shader variables
+    int attrPosition, attrColor, attrNormal;
+    int unifViewProj, unifModel;
 
 protected:
     GLContext *context;

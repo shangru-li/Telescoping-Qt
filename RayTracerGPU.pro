@@ -29,7 +29,8 @@ SOURCES += \
         RenderUtility/glcontext.cpp \
         Geometry/drawable.cpp \
     Geometry/squareplane.cpp \
-    RenderUtility/shaderprogram.cpp
+    RenderUtility/shaderprogram.cpp \
+    RenderUtility/camera.cpp
 
 HEADERS += \
         mainwindow.h \
@@ -37,7 +38,8 @@ HEADERS += \
         global.h \
         Geometry/drawable.h \
     Geometry/squareplane.h \
-    RenderUtility/shaderprogram.h
+    RenderUtility/shaderprogram.h \
+    RenderUtility/camera.h
 
 FORMS += \
         mainwindow.ui

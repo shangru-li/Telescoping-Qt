@@ -14,6 +14,7 @@ public:
     std::vector<glm::vec4> vertexBuffer;
 
     virtual void createGeometry() = 0;
+    virtual glm::mat4 getModel();
 
     void create();
     void destroy();

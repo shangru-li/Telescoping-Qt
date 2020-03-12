@@ -45,6 +45,14 @@ void ShaderProgram::draw(Drawable &drawable)
     if (attrNormal != -1) context->glDisableVertexAttribArray(attrNormal);
 }
 
+void ShaderProgram::setModelViewProj(glm::mat4 viewProj, glm::mat4 model)
+{
+    useMe();
+    if (unifViewProj != -1) context->glUniformMatrix4fv(unifViewProj, 1, GL_FALSE, &viewProj[0][0]);
+    useMe();
+    if (unifModel != -1) context->glUniformMatrix4fv(unifModel, 1, GL_FALSE, &model[0][0]);
+}
+
 void ShaderProgram::create(const char *vertexFile, const char *fragmentFile)
 {
     hVertexShader = context->glCreateShader(GL_VERTEX_SHADER);
@@ -67,8 +75,11 @@ void ShaderProgram::create(const char *vertexFile, const char *fragmentFile)
     context->glAttachShader(hProgram, hFragmentShader);
     context->glLinkProgram(hProgram);
 
-    // attributes
+    // handles to shader variables
     attrPosition = context->glGetAttribLocation(hProgram, "vs_Position");
     attrColor = context->glGetAttribLocation(hProgram, "vs_Color");
     attrNormal = context->glGetAttribLocation(hProgram, "vs_Normal");
+
+    unifModel = context->glGetUniformLocation(hProgram, "u_Model");
+    unifViewProj = context->glGetUniformLocation(hProgram, "u_ViewProj");
 }

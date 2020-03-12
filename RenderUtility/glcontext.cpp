@@ -2,7 +2,7 @@
 
 GLContext::GLContext(QWidget *parent)
     : QOpenGLWidget(parent), shaderProgram(this),
-      squarePlane(this)
+      squarePlane(this), camera(600.f / 400.f, 90.f, glm::vec3(0, 0, -50), glm::vec3(0, 0, 0))
 {
     connect(&timer, SIGNAL(timeout()), this, SLOT(timerUpdate())); // when it's time to update a frame
     timer.start(16); // update every 16 ms
@@ -40,6 +40,7 @@ void GLContext::paintGL()
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+    shaderProgram.setModelViewProj(camera.getViewProj());
     shaderProgram.draw(squarePlane);
 }
 

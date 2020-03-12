@@ -45,6 +45,16 @@ inline void pl(glm::vec4 v, string s = "")
     cout << s << ": " << glm::to_string(v) << endl;
 }
 
+inline void pl(glm::mat3 m, string s = "")
+{
+    cout << s << ": " << glm::to_string(m) << endl;
+}
+
+inline void pl(glm::mat4 m, string s = "")
+{
+    cout << s << ": " << glm::to_string(m) << endl;
+}
+
 inline std::string fromFile(const char *fileName)
 {
     QString text;

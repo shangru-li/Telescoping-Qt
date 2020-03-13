@@ -33,11 +33,11 @@ void CubeArray::createGeometry()
         if (c->selected)
         {
             addColoredCube(c);
-            redArrow = std::make_unique<Cube>(c->transform * glm::translate(glm::scale(glm::mat4(1.f), glm::vec3(0.3f, 0.3f, 0.3f)), glm::vec3(5, 0, 0)), 1);
+            redArrow = std::make_unique<Cube>(c->transform * glm::translate(glm::scale(glm::mat4(1.f), glm::vec3(0.3f, 0.3f, 0.3f)), glm::vec3(5, 0, 0)), Cube::RED);
             addColoredCube(redArrow.get(), _red, false);
-            greenArrow = std::make_unique<Cube>(c->transform * glm::translate(glm::scale(glm::mat4(1.f), glm::vec3(0.3f, 0.3f, 0.3f)), glm::vec3(0, 5, 0)), 2);
+            greenArrow = std::make_unique<Cube>(c->transform * glm::translate(glm::scale(glm::mat4(1.f), glm::vec3(0.3f, 0.3f, 0.3f)), glm::vec3(0, 5, 0)), Cube::GREEN);
             addColoredCube(greenArrow.get(), _green, false);
-            blueArrow = std::make_unique<Cube>(c->transform * glm::translate(glm::scale(glm::mat4(1.f), glm::vec3(0.3f, 0.3f, 0.3f)), glm::vec3(0, 0, 5)), 3);
+            blueArrow = std::make_unique<Cube>(c->transform * glm::translate(glm::scale(glm::mat4(1.f), glm::vec3(0.3f, 0.3f, 0.3f)), glm::vec3(0, 0, 5)), Cube::BLUE);
             addColoredCube(blueArrow.get(), _blue, false);
         }
         else addColoredCube(c, _grey, false);

@@ -51,7 +51,7 @@ void GLContext::keyPressEvent(QKeyEvent *e)
 {
     // from a to z
     if (e->key() >= 0x30 && e->key() <= 0x5a) keyboardStates[e->key()] = true;
-    if (e->key() == 'F' && selectedCube->type == Cube::GENERATOR && canGenerate)
+    if (e->key() == 'F' && canGenerate)
     {
         canGenerate = false;
         cubeArray.addCube(selectedCube->transform);

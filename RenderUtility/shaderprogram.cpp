@@ -49,7 +49,6 @@ void ShaderProgram::setModelViewProj(glm::mat4 viewProj, glm::mat4 model)
 {
     useMe();
     if (unifViewProj != -1) context->glUniformMatrix4fv(unifViewProj, 1, GL_FALSE, &viewProj[0][0]);
-    useMe();
     if (unifModel != -1) context->glUniformMatrix4fv(unifModel, 1, GL_FALSE, &model[0][0]);
 }
 

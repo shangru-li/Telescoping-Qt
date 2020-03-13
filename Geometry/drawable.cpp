@@ -39,3 +39,10 @@ void Drawable::destroy()
         indexCount = 0;
     }
 }
+
+void Drawable::update()
+{
+    createGeometry();
+    destroy();
+    create();
+}

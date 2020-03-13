@@ -15,9 +15,9 @@ public:
 
     virtual void createGeometry() = 0;
     virtual glm::mat4 getModel();
-
     void create();
     void destroy();
+    void update();
 
     GLuint hIndexBuffer, hVertexBuffer;
     int indexCount; // for drawing in shader program

@@ -20,14 +20,31 @@
 #include <QTextStream>
 
 #include <vector>
+#include <array>
 #include <memory>
 
 #include <iostream>
 using namespace std;
 
+extern glm::vec4 _red;
+extern glm::vec4 _green;
+extern glm::vec4 _yellow;
+extern glm::vec4 _blue;
+extern glm::vec4 _black;
+extern glm::vec4 _white;
+extern glm::vec4 _grey;
+extern glm::vec4 _purple;
+extern glm::vec4 _normal;
+extern glm::mat4 _I;
+
 inline void pl(string s)
 {
     cout << s << endl;
+}
+
+inline void pl(float f)
+{
+    cout << f << endl;
 }
 
 inline void pl(glm::vec2 v, string s = "")

@@ -38,7 +38,8 @@ SOURCES += \
     RayCasting/intersection.cpp \
     RayCasting/ray.cpp \
     Geometry/scene.cpp \
-    Geometry/cubearray.cpp
+    Geometry/cubearray.cpp \
+    Geometry/curve.cpp
 
 HEADERS += \
         mainwindow.h \
@@ -52,7 +53,8 @@ HEADERS += \
     RayCasting/intersection.h \
     RayCasting/ray.h \
     Geometry/scene.h \
-    Geometry/cubearray.h
+    Geometry/cubearray.h \
+    Geometry/curve.h
 
 FORMS += \
         mainwindow.ui

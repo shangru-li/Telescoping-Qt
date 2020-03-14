@@ -38,7 +38,7 @@ void ShaderProgram::draw(Drawable &drawable)
     }
 
     context->glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, drawable.hIndexBuffer);
-    context->glDrawElements(GL_TRIANGLES, drawable.indexCount, GL_UNSIGNED_INT, 0);
+    context->glDrawElements(drawable.drawMode(), drawable.indexCount, GL_UNSIGNED_INT, 0);
 
     if (attrPosition != -1) context->glDisableVertexAttribArray(attrPosition);
     if (attrColor != -1) context->glDisableVertexAttribArray(attrColor);

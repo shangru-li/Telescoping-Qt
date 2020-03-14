@@ -42,9 +42,9 @@ inline void pl(string s)
     cout << s << endl;
 }
 
-inline void pl(float f)
+inline void pl(float f, string s = "")
 {
-    cout << f << endl;
+    cout << s << ": " << f << endl;
 }
 
 inline void pl(glm::vec2 v, string s = "")

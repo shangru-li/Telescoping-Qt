@@ -9,6 +9,7 @@
 
 #include "Geometry/squareplane.h"
 #include "Geometry/cubearray.h"
+#include "Geometry/curve.h"
 #include "shaderprogram.h"
 #include "camera.h"
 
@@ -46,6 +47,7 @@ public:
 
     CubeArray cubeArray;
     Cube *selectedCube;
+    Curve curve;
 
     ShaderProgram shaderProgram;
 

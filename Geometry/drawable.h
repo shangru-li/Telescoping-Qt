@@ -15,6 +15,7 @@ public:
 
     virtual void createGeometry() = 0;
     virtual glm::mat4 getModel();
+    virtual int drawMode() { return GL_TRIANGLES; }
     void create();
     void destroy();
     void update();

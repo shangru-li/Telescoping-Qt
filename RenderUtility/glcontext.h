@@ -57,6 +57,9 @@ public:
 
     std::array<bool, 256> keyboardStates;
 
+    // Stage control
+    bool torsionStage;
+
 private:
     QTimer timer; // controls frame rate
     GLuint vao; // handle for vao

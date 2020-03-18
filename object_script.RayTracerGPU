@@ -1,0 +1,17 @@
+main.o
+mainwindow.o
+glcontext.o
+drawable.o
+squareplane.o
+shaderprogram.o
+camera.o
+cube.o
+global.o
+intersection.o
+ray.o
+scene.o
+cubearray.o
+curve.o
+qrc_resources.o
+moc_mainwindow.o
+moc_glcontext.o

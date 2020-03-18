@@ -110,7 +110,7 @@ void CubeArray::interpolate()
     if (keys.size() <= 1) return;
     for (int segment = 0; segment < keys.size() - 1; ++segment)
     {
-        for (float t = 0.f; t < 1.f - std::numeric_limits<float>::min(); t += 0.001f)
+        for (float t = 0.f; t < 1.f - std::numeric_limits<float>::min(); t += 0.1f)
         {
             curve.push_back(interpolateSegment(segment, t));
         }

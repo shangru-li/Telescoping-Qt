@@ -42,6 +42,7 @@ SOURCES += \
     Geometry/curve.cpp
 
 HEADERS += \
+    Geometry/discrete.h \
         mainwindow.h \
         RenderUtility/glcontext.h \
         global.h \
@@ -64,3 +65,18 @@ INCLUDEPATH += include
 DISTFILES +=
 
 RESOURCES += resources.qrc
+
+win32:CONFIG(release, debug|release): LIBS += -LC:/gurobi901/win64/lib/ -lgurobi90
+else:win32:CONFIG(debug, debug|release): LIBS += -LC:/gurobi901/win64/lib/ -lgurobi90
+else:unix: LIBS += -LC:/gurobi901/win64/lib/ -lgurobi90
+
+win32:CONFIG(release, debug|release): LIBS += -LC:/gurobi901/win64/lib/ -lgurobi_c++md2015
+else:win32:CONFIG(debug, debug|release): LIBS += -LC:/gurobi901/win64/lib/ -lgurobi_c++mdd2015
+else:unix: LIBS += -LC:/gurobi901/win64/lib/ -lgurobi_c++md2015
+
+INCLUDEPATH += C:/gurobi901/win64/include
+DEPENDPATH += C:/gurobi901/win64/include
+
+
+
+

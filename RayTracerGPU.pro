@@ -75,7 +75,7 @@ else:win32:CONFIG(debug, debug|release): LIBS += -LC:/gurobi901/win64/lib/ -lgur
 else:unix: LIBS += -LC:/gurobi901/win64/lib/ -lgurobi_c++md2015
 
 INCLUDEPATH += C:/gurobi901/win64/include
-DEPENDPATH += C:/gurobi901/win64/include
+DEPENDPATH += C:/gurobi901/win64/lib
 
 
 

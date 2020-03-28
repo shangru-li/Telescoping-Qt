@@ -66,6 +66,17 @@ void GLContext::keyPressEvent(QKeyEvent *e)
         canGenerate = false;
         cubeArray.addCube(selectedCube->transform);
     }
+    if (e->key() == 'P')
+    {
+        curve.reAssignPoints();
+        curve.discretilize();
+        discreteStage = true;
+    }
+    if (e->key() == 'O')
+    {
+        curve.makeImpulseCurve();
+        torsionStage = true;
+    }
 }
 
 void GLContext::keyReleaseEvent(QKeyEvent *e)
@@ -153,17 +164,6 @@ void GLContext::timerUpdate()
     if (keyboardStates['S']) camera->rotateSpherical(-rotateDegree, camera->right);
     if (keyboardStates['Q']) camera->zoom(-zoomLength);
     if (keyboardStates['E']) camera->zoom(zoomLength);
-    if (keyboardStates['P'])
-    {
-        curve.reAssignPoints();
-        curve.discretilize();
-        discreteStage = true;
-    }
-    if (keyboardStates['O'])
-    {
-        curve.makeImpulseCurve();
-        torsionStage = true;
-    }
 
     update(); // update the widget
 }

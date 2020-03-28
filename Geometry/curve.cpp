@@ -4,7 +4,7 @@
 #include "global.h"
 
 int Curve::numImpulses = 6;
-Curve::Curve(GLContext *context): Drawable(context), points(nullptr), reAssignFlag(false)
+Curve::Curve(GLContext *context): Drawable(context), points(nullptr), hasAssigned(false)
 {
 
 }
@@ -15,15 +15,15 @@ void Curve::createGeometry()
     vertexBuffer.clear();
     if (points && points->size() > 1)
     {
-        for(int i = 0; i < points->size() - 1; ++i)
+        for(unsigned int i = 0; i < points->size() - 1; ++i)
         {
             indexBuffer.push_back(i);
             indexBuffer.push_back(i + 1);
-            vertexBuffer.push_back((*points)[i]);
+            vertexBuffer.push_back(points->at(i));
             vertexBuffer.push_back(_white);
             vertexBuffer.push_back(_normal);
         }
-        vertexBuffer.push_back((*points)[points->size() - 1]);
+        vertexBuffer.push_back(points->at(points->size() - 1));
         vertexBuffer.push_back(_white);
         vertexBuffer.push_back(_normal);
     }
@@ -47,7 +47,7 @@ int Curve::computeNumImpulses()
 float Curve::calcArcLength()
 {
     float re = 0.0f;
-    for(unsigned int i = 0; i < points->size() - 1; i++)
+    for (unsigned int i = 0; i < points->size() - 1; ++i)
     {
         glm::vec4 p1 = points->at(i);
         glm::vec4 p2 = points->at(i + 1);
@@ -56,12 +56,12 @@ float Curve::calcArcLength()
     return re;
 }
 
-std::vector<float> Curve::evenlySpacePoints(int num)
+std::vector<float> Curve::evenlySpacePoints(int numSegments)
 {
-    float step = arcLength / num;
+    float step = arcLength / numSegments;
     vector<float> steps;
 
-    for(int i = 0; i < num; i++)
+    for(int i = 0; i < numSegments; i++)
     {
         steps.push_back(i * step);
     }
@@ -500,11 +500,9 @@ glm::vec3 Curve::transformedHelixPoint(CurveSegment cs, float arcLen)
 
 void Curve::reAssignPoints()
 {
-    if(reAssignFlag)
-    {
-        return;
-    }
-    reAssignFlag = true;
+    if (hasAssigned) return;
+    hasAssigned = true;
+
     arcLength = calcArcLength();
     float cumuArc = 0.0f;
     int curSeg = 0;
@@ -529,7 +527,7 @@ void Curve::reAssignPoints()
             newPoint /= (float)curPoints.size();
             newPoints.push_back(newPoint);
             curPoints.clear();
-            curPoints .push_back(points->at(i));
+            curPoints.push_back(points->at(i));
         }
         else
         {
@@ -537,6 +535,7 @@ void Curve::reAssignPoints()
         }
     }
 
+    // add last point
     glm::vec4 newPoint = glm::vec4(0.0f);
     for(int j = 0; j < curPoints.size(); j++)
     {
@@ -546,10 +545,6 @@ void Curve::reAssignPoints()
     newPoints.push_back(newPoint);
 
     points->clear();
-    for(int i = 0; i < newPoints.size(); i++)
-    {
-        points->push_back(newPoints.at(i));
-    }
-
+    points->insert(points->end(), newPoints.begin(), newPoints.end());
 }
 

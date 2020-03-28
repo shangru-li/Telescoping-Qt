@@ -46,7 +46,7 @@ private:
     void AddPointsOfSegment(CurveSegment seg);
     glm::vec3 transformedHelixPoint(CurveSegment cs, float arcLen);
 
-    bool reAssignFlag;
+    bool hasAssigned;
 
 };
 

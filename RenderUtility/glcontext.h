@@ -58,6 +58,7 @@ public:
     std::array<bool, 256> keyboardStates;
 
     // Stage control
+    bool discreteStage;
     bool torsionStage;
 
 private:

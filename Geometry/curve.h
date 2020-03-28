@@ -34,6 +34,7 @@ public:
     float segmentLength;
 
     glm::vec3 reconstructFromAngles();
+    void reAssignPoints();
 private:
     // Calculate arc length
     float calcArcLength();
@@ -44,6 +45,9 @@ private:
     void FixFrenetBackward(int start);
     void AddPointsOfSegment(CurveSegment seg);
     glm::vec3 transformedHelixPoint(CurveSegment cs, float arcLen);
+
+    bool reAssignFlag;
+
 };
 
 

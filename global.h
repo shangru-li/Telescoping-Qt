@@ -95,22 +95,70 @@ inline float angleBetween(glm::vec3 from, glm::vec3 to, glm::vec3 up)
     glm::vec3 cross = glm::cross(from, to);
     float sgn = 0.0f;
     float dot = glm::dot(cross, up);
-    if(dot > 0.0f || dot > FLT_EPSILON)
+    if(dot > 0.0f || fabs(dot) < FLT_EPSILON)
         sgn = 1.0f;
     else
         sgn = -1.0f;
-    return 180.0f * sgn * atan2(glm::length(cross), glm::dot(from, to)) / M_PI;
+    return glm::degrees(sgn * atan2(glm::length(cross), glm::dot(from, to)));
 }
 
 inline glm::fquat lookRotation(glm::vec3 forward, glm::vec3 upward)
 {
-    glm::vec3 xAxis = glm::cross(forward, upward);
-    glm::vec3 zAxis = forward;
-    glm::vec3 yAxis = glm::cross(zAxis, xAxis);
+    forward = glm::normalize(forward);
 
-    glm::mat3 rot = glm::mat3(xAxis, yAxis, zAxis);
+    glm::vec3 vector = glm::normalize(forward);
+    glm::vec3 vector2 = glm::normalize(glm::cross(upward, vector));
+    glm::vec3 vector3 = glm::cross(vector, vector2);
+    float m00 = vector2.x;
+    float m01 = vector2.y;
+    float m02 = vector2.z;
+    float m10 = vector3.x;
+    float m11 = vector3.y;
+    float m12 = vector3.z;
+    float m20 = vector.x;
+    float m21 = vector.y;
+    float m22 = vector.z;
 
-    return glm::quat_cast(rot);
+
+    float num8 = (m00 + m11) + m22;
+    glm::fquat quaternion;
+    if (num8 > 0.0f)
+    {
+        float num = (float)sqrt(num8 + 1.0f);
+        quaternion.w = num * 0.5f;
+        num = 0.5f / num;
+        quaternion.x = (m12 - m21) * num;
+        quaternion.y = (m20 - m02) * num;
+        quaternion.z = (m01 - m10) * num;
+        return quaternion;
+    }
+    if ((m00 >= m11) && (m00 >= m22))
+    {
+        float num7 = (float)sqrt(((1.0f + m00) - m11) - m22);
+        float num4 = 0.5f / num7;
+        quaternion.x = 0.5f * num7;
+        quaternion.y = (m01 + m10) * num4;
+        quaternion.z = (m02 + m20) * num4;
+        quaternion.w = (m12 - m21) * num4;
+        return quaternion;
+    }
+    if (m11 > m22)
+    {
+        float num6 = (float)sqrt(((1.0f + m11) - m00) - m22);
+        float num3 = 0.5f / num6;
+        quaternion.x = (m10+ m01) * num3;
+        quaternion.y = 0.5f * num6;
+        quaternion.z = (m21 + m12) * num3;
+        quaternion.w = (m20 - m02) * num3;
+        return quaternion;
+    }
+    float num5 = (float)sqrt(((1.0f + m22) - m00) - m11);
+    float num2 = 0.5f / num5;
+    quaternion.x = (m20 + m02) * num2;
+    quaternion.y = (m21 + m12) * num2;
+    quaternion.z = 0.5f * num5;
+    quaternion.w = (m01 - m10) * num2;
+    return quaternion;
 }
 
 

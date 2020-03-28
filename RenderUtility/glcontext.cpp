@@ -3,7 +3,8 @@
 GLContext::GLContext(QWidget *parent)
     : QOpenGLWidget(parent), shaderProgram(this), fps(60.f),
       squarePlane(this), cubeArray(this), curve(this),
-      selectedCube(nullptr), movingCube(false), canGenerate(true), torsionStage(false)
+      selectedCube(nullptr), movingCube(false), canGenerate(true),
+      torsionStage(false), discreteStage(false)
 {
     connect(&timer, SIGNAL(timeout()), this, SLOT(timerUpdate())); // when it's time to update a frame
     timer.start(glm::round(1000 / fps)); // update every 16 ms
@@ -41,7 +42,7 @@ void GLContext::initializeGL()
 void GLContext::paintGL()
 {
     cubeArray.update();
-    if(!torsionStage)
+    if(!torsionStage && !discreteStage)
     {
         cubeArray.updateCurve();
         curve.points = &cubeArray.curve;
@@ -152,7 +153,12 @@ void GLContext::timerUpdate()
     if (keyboardStates['S']) camera->rotateSpherical(-rotateDegree, camera->right);
     if (keyboardStates['Q']) camera->zoom(-zoomLength);
     if (keyboardStates['E']) camera->zoom(zoomLength);
-    if (keyboardStates['P']) curve.discretilize();
+    if (keyboardStates['P'])
+    {
+        curve.reAssignPoints();
+        curve.discretilize();
+        discreteStage = true;
+    }
     if (keyboardStates['O'])
     {
         curve.makeImpulseCurve();

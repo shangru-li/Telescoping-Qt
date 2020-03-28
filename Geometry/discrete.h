@@ -28,19 +28,19 @@ public:
     {
         glm::vec3 tangent1 = frame1.T;
         glm::vec3 tangent2 = frame2.T;
-        glm::fquat tangentQuat = glm::mix(glm::fquat(tangent1.x, tangent1.y, tangent1.z, 0.0f),
+        glm::fquat tangentQuat = glm::slerp(glm::fquat(tangent1.x, tangent1.y, tangent1.z, 0.0f),
                                           glm::fquat(tangent2.x, tangent2.y, tangent2.z, 0.0f), t);
         glm::vec3 tangent = glm::vec3(tangentQuat.x, tangentQuat.y, tangentQuat.z);
 
         glm::vec3 binormal1 = frame1.B;
         glm::vec3 binormal2 = frame2.B;
-        glm::fquat binormalQuat = glm::mix(glm::fquat(binormal1.x, binormal1.y, binormal1.z, 0.0f),
+        glm::fquat binormalQuat = glm::slerp(glm::fquat(binormal1.x, binormal1.y, binormal1.z, 0.0f),
             glm::fquat(binormal2.x, binormal2.y, binormal2.z, 0.0f), t);
         glm::vec3 binormal = glm::vec3(binormalQuat.x, binormalQuat.y, binormalQuat.z);
 
         glm::vec3 normal1 = frame1.T;
         glm::vec3 normal2 = frame2.T;
-        glm::fquat normalQuat = glm::mix(glm::fquat(normal1.x, normal1.y, normal1.z, 0.0f),
+        glm::fquat normalQuat = glm::slerp(glm::fquat(normal1.x, normal1.y, normal1.z, 0.0f),
             glm::fquat(normal2.x, normal2.y, normal2.z, 0.0f), t);
         glm::vec3 normal = glm::vec3(normalQuat.x, normalQuat.y, normalQuat.z);
 
@@ -97,7 +97,7 @@ public:
 
         float angle = angleBetween(prevTangent, tangent, binormal);
 
-        glm::fquat rot = glm::quat(angle, binormal.x, binormal.y, binormal.z);
+        glm::fquat rot = glm::angleAxis(glm::degrees(angle), binormal);
 
         OrthonormalFrame rotated = prevFrame.RotateBy(rot);
         bishopFrame = rotated;
@@ -144,7 +144,7 @@ static OrthonormalFrame frameAlongHelix(float curvature, float torsion, float ar
                                                          glm::vec3(0.0f, 1.0f, 0.0f),
                                                          glm::cross(glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(0.0f, 1.0f, 0.0f)));
         float rotationAngle = torsion * arcLength;
-        glm::fquat r = glm::fquat(180 / M_PI * rotationAngle, 0.0f, 0.0f, 1.0f);
+        glm::fquat r = glm::angleAxis(glm::degrees(rotationAngle), glm::vec3(0.0f, 0.0f, 1.0f));
         return defaultFrame.RotateBy(r);
     }
 
@@ -180,8 +180,8 @@ static glm::fquat rotateAlongCircle(float curvatureAmount, float arcLength)
 
     // Now rotate the forward vector by that amount.
     glm::vec3 axisOfRotation = glm::vec3(0.0f, 0.0f, 1.0f);
-    float degrees = radians / (M_PI / 180.0f);
-    glm::fquat rotation = glm::fquat(-degrees, axisOfRotation.x, axisOfRotation.y, axisOfRotation.z);
+    //float degrees = radians / (M_PI / 180.0f);
+    glm::fquat rotation = glm::angleAxis(glm::degrees(radians), axisOfRotation);
     return rotation;
 }
 
@@ -195,7 +195,7 @@ static glm::fquat rotateAlongHelix(float curvature, float torsion, float arcLeng
     if (curvature < 1e-6)
     {
         float rotationAngle = torsion * arcLength;
-        return glm::fquat(180.0f / M_PI * rotationAngle, 0.0f, 0.0f, 1.0f);
+        return glm::angleAxis(glm::degrees(rotationAngle), glm::vec3(0.0f, 0.0f, 1.0f));
     }
 
     // Correct because the initial tangent of a helix isn't (0, 0, 1),

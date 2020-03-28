@@ -4,7 +4,7 @@
 #include "global.h"
 
 int Curve::numImpulses = 6;
-Curve::Curve(GLContext *context): Drawable(context), points(nullptr)
+Curve::Curve(GLContext *context): Drawable(context), points(nullptr), reAssignFlag(false)
 {
 
 }
@@ -113,7 +113,7 @@ void Curve::makeImpulseCurve()
     model.update();
 
     // Add differences constraints
-    for(int i = 0; i < absDiffsMinus.size(); i++)
+    for(unsigned int i = 0; i < absDiffsMinus.size(); i++)
     {
         GRBVar vPlus = absDiffsPlus.at(i);
         GRBVar vMinus = absDiffsMinus.at(i);
@@ -136,7 +136,8 @@ void Curve::makeImpulseCurve()
     // Add least square error component
     for(int i = 0; i < discretePoints.size(); i++)
     {
-        cumulativeTwist += M_PI * discretePoints.at(i).twistingAngle / 180.0f;
+        pl(discretePoints.at(i).twistingAngle);
+        cumulativeTwist += glm::radians(discretePoints.at(i).twistingAngle);
         float arcPosition = (i + 1) * segmentLength;
 
         int stepNum = 0;
@@ -233,7 +234,7 @@ void Curve::makeImpulseCurve()
     vector<CurveSegment> segments;
     
     // Create initial segment
-    CurveSegment prevHelix = CurveSegment(startingPoint, averageCurvature, 0, arcSteps[0], constTorsion, startFrame);
+    CurveSegment prevHelix = CurveSegment(startingPoint, averageCurvature, 0, arcSteps[0], -constTorsion, startFrame);
     segments.push_back(prevHelix);
     AddPointsOfSegment(prevHelix);
 
@@ -246,10 +247,10 @@ void Curve::makeImpulseCurve()
 
         glm::vec3 newBase = transformedHelixPoint(prevHelix, prevHelix.arcLength);
         OrthonormalFrame newFrame = transformedHelixFrame(prevHelix, prevHelix.arcLength);
-        glm::fquat impulseRot = glm::fquat(180.0f * impulse / M_PI, newFrame.T.x, newFrame.T.y, newFrame.T.z);
+        glm::fquat impulseRot = glm::angleAxis(glm::degrees(impulse), newFrame.T);
         newFrame = newFrame.RotateBy(impulseRot);
 
-        prevHelix = CurveSegment(newBase, averageCurvature, 0, arcStep, constTorsion, newFrame);
+        prevHelix = CurveSegment(newBase, averageCurvature, 0, arcStep, -constTorsion, newFrame);
 
         len += arcStep;
         AddPointsOfSegment(prevHelix);
@@ -273,7 +274,8 @@ void Curve::discretilize(float segLength)
     {
         return;
     }
-    arcLength = calcArcLength();
+    //arcLength = calcArcLength();
+    //reAssignPoints();
     segmentLength = segLength;
     startingPoint = glm::vec3(points->at(0));
     startingTangent = glm::normalize(glm::vec3(points->at(1) - points->at(0)));
@@ -282,6 +284,8 @@ void Curve::discretilize(float segLength)
 
     for(int i = 1; i < points->size() - 1; i++)
     {
+        std::cout<<i;
+        pl(points->at(i));
         glm::vec3 previousVec = glm::normalize(glm::vec3(points->at(i) - points->at(i - 1)));
         glm::vec3 nextVec = glm::normalize(glm::vec3(points->at(i + 1) - points->at(i)));
 
@@ -298,8 +302,7 @@ void Curve::discretilize(float segLength)
 
         // Compute bending angles(curvature)
         float dot = glm::dot(previousVec, nextVec);
-        float bendAngle = (dot >= 1) ? 0 : 180 * acos(dot) / M_PI;
-
+        float bendAngle = (dot >= 1) ? 0 : 180.0f * acos(dot) / M_PI;
         // Compute twist angles （discrete torsion）
         float twistAngle;
         if(i == 1)
@@ -356,10 +359,9 @@ glm::vec3 Curve::reconstructFromAngles()
     {
         DCurvePoint dcp = discretePoints.at(i);
         dcp.position = currentPoint;
-        currentBinormal = glm::mat3_cast(glm::fquat(dcp.twistingAngle, currentDir.x, currentDir.y, currentDir.z)) * currentBinormal;
-        currentDir = glm::mat3_cast(glm::fquat(dcp.bendingAngle, currentBinormal.x, currentBinormal.y, currentBinormal.z)) * currentDir;
+        currentBinormal = glm::mat3_cast(glm::angleAxis(dcp.twistingAngle, currentDir)) * currentBinormal;
+        currentDir = glm::mat3_cast(glm::angleAxis(dcp.bendingAngle, currentBinormal)) * currentDir;
         currentPoint += currentDir * segmentLength;
-
         if(isnan(currentPoint.x))
         {
             std::cout<<"Binormal nan error"<<std::endl;
@@ -367,8 +369,6 @@ glm::vec3 Curve::reconstructFromAngles()
 
         points->push_back(glm::vec4(currentPoint, 1.0f));
     }
-
-    createGeometry();
     return currentPoint;
 }
 
@@ -385,10 +385,8 @@ void Curve::ComputeFrenetFrames()
         }
         else if(i == discretePoints.size() - 1)
         {
-            glm::fquat r = glm::fquat(discretePoints.at(i).bendingAngle,
-                                      discretePoints.at(i - 1).frenetFrame.B.x,
-                                      discretePoints.at(i - 1).frenetFrame.B.y,
-                                      discretePoints.at(i - 1).frenetFrame.B.z);
+            glm::fquat r = glm::angleAxis(discretePoints.at(i).bendingAngle,
+                                          discretePoints.at(i - 1).frenetFrame.B);
             dcp.frenetFrame = discretePoints.at(i - 1).frenetFrame.RotateBy(r);
         }
         else
@@ -496,6 +494,62 @@ glm::vec3 Curve::transformedHelixPoint(CurveSegment cs, float arcLen)
 {
     glm::vec3 helixPoint = translateAlongHelix(cs.curvature, cs.torsion, arcLen);
     glm::fquat rotatedToWorld = lookRotation(cs.frame.T, cs.frame.N);
-    glm::vec3 world = rotatedToWorld * helixPoint + cs.startPosition;
+    glm::vec3 world = glm::mat3_cast(rotatedToWorld) * helixPoint + cs.startPosition;
     return world;
 }
+
+void Curve::reAssignPoints()
+{
+    if(reAssignFlag)
+    {
+        return;
+    }
+    reAssignFlag = true;
+    arcLength = calcArcLength();
+    float cumuArc = 0.0f;
+    int curSeg = 0;
+    std::vector<glm::vec4> curPoints;
+    std::vector<glm::vec4> newPoints;
+
+    curPoints.push_back(points->at(0));
+
+    for(int i = 1; i < points->size(); i++)
+    {
+        float length = glm::length(points->at(i) - points->at(i - 1));
+        cumuArc += length;
+        int seg = cumuArc / 0.1f;
+        if(seg > curSeg)
+        {
+            curSeg++;
+            glm::vec4 newPoint = glm::vec4(0.0f);
+            for(int j = 0; j < curPoints.size(); j++)
+            {
+                newPoint += curPoints.at(j);
+            }
+            newPoint /= (float)curPoints.size();
+            newPoints.push_back(newPoint);
+            curPoints.clear();
+            curPoints .push_back(points->at(i));
+        }
+        else
+        {
+            curPoints.push_back(points->at(i));
+        }
+    }
+
+    glm::vec4 newPoint = glm::vec4(0.0f);
+    for(int j = 0; j < curPoints.size(); j++)
+    {
+        newPoint += curPoints.at(j);
+    }
+    newPoint /= (float)curPoints.size();
+    newPoints.push_back(newPoint);
+
+    points->clear();
+    for(int i = 0; i < newPoints.size(); i++)
+    {
+        points->push_back(newPoints.at(i));
+    }
+
+}
+

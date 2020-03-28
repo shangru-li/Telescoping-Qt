@@ -3,7 +3,7 @@
 #include "gurobi_c.h"
 #include "global.h"
 
-int Curve::numImpulses = 6;
+int Curve::numImpulses = 16;
 Curve::Curve(GLContext *context): Drawable(context), points(nullptr), hasAssigned(false)
 {
 

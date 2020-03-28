@@ -132,8 +132,8 @@ static OrthonormalFrame frameAlongHelix(float curvature, float torsion, float ar
     if (fabs(torsion) < 1e-6)
     {
         OrthonormalFrame defaultFrame = OrthonormalFrame(glm::vec3(0.0f, 0.0f, 1.0f),
-                                                    glm::vec3(0.0f, -1.0f, 0.0f),
-                                                    glm::cross(glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(0.0f, -1.0f, 0.0f)));
+                                                    glm::vec3(0.0f, 1.0f, 0.0f),
+                                                    glm::cross(glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(0.0f, 1.0f, 0.0f)));
         glm::fquat r = rotateAlongCircle(curvature, arcLength);
         return defaultFrame.RotateBy(r);
     }
@@ -141,8 +141,8 @@ static OrthonormalFrame frameAlongHelix(float curvature, float torsion, float ar
     if (curvature < 1e-6)
     {
         OrthonormalFrame defaultFrame = OrthonormalFrame(glm::vec3(0.0f, 0.0f, 1.0f),
-                                                         glm::vec3(0.0f, -1.0f, 0.0f),
-                                                         glm::cross(glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(0.0f, -1.0f, 0.0f)));
+                                                         glm::vec3(0.0f, 1.0f, 0.0f),
+                                                         glm::cross(glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(0.0f, 1.0f, 0.0f)));
         float rotationAngle = torsion * arcLength;
         glm::fquat r = glm::angleAxis(glm::degrees(rotationAngle), glm::vec3(0.0f, 0.0f, 1.0f));
         return defaultFrame.RotateBy(r);

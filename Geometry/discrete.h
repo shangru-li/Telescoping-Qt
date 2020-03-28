@@ -21,7 +21,7 @@ public:
         glm::vec3 rotB = glm::mat3_cast(rot) * B;
         glm::vec3 rotN = glm::mat3_cast(rot) * N;
 
-        return OrthonormalFrame(rotT, rotB, rotN);
+        return OrthonormalFrame(rotT, rotN, rotB);
     }
 
     static OrthonormalFrame Slerp(OrthonormalFrame frame1, OrthonormalFrame frame2, float t)
@@ -44,7 +44,7 @@ public:
             glm::fquat(normal2.x, normal2.y, normal2.z, 0.0f), t);
         glm::vec3 normal = glm::vec3(normalQuat.x, normalQuat.y, normalQuat.z);
 
-        return OrthonormalFrame(tangent, binormal, normal);
+        return OrthonormalFrame(tangent, normal, binormal);
     }
 };
 
@@ -76,7 +76,7 @@ public:
 
         glm::vec3 normal = glm::cross(binormal, tangent);
 
-        frenetFrame = OrthonormalFrame(tangent, binormal, normal);
+        frenetFrame = OrthonormalFrame(tangent, normal, binormal);
     }
 
     void ComputeFrenet(glm::vec3 prevPos, DCurvePoint next)
@@ -132,8 +132,8 @@ static OrthonormalFrame frameAlongHelix(float curvature, float torsion, float ar
     if (fabs(torsion) < 1e-6)
     {
         OrthonormalFrame defaultFrame = OrthonormalFrame(glm::vec3(0.0f, 0.0f, 1.0f),
-                                                    glm::vec3(0.0f, 1.0f, 0.0f),
-                                                    glm::cross(glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(0.0f, 1.0f, 0.0f)));
+                                                    glm::vec3(0.0f, -1.0f, 0.0f),
+                                                    glm::cross(glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(0.0f, -1.0f, 0.0f)));
         glm::fquat r = rotateAlongCircle(curvature, arcLength);
         return defaultFrame.RotateBy(r);
     }
@@ -141,8 +141,8 @@ static OrthonormalFrame frameAlongHelix(float curvature, float torsion, float ar
     if (curvature < 1e-6)
     {
         OrthonormalFrame defaultFrame = OrthonormalFrame(glm::vec3(0.0f, 0.0f, 1.0f),
-                                                         glm::vec3(0.0f, 1.0f, 0.0f),
-                                                         glm::cross(glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(0.0f, 1.0f, 0.0f)));
+                                                         glm::vec3(0.0f, -1.0f, 0.0f),
+                                                         glm::cross(glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(0.0f, -1.0f, 0.0f)));
         float rotationAngle = torsion * arcLength;
         glm::fquat r = glm::angleAxis(glm::degrees(rotationAngle), glm::vec3(0.0f, 0.0f, 1.0f));
         return defaultFrame.RotateBy(r);

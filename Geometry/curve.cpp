@@ -289,12 +289,14 @@ void Curve::discretilize(float segLength)
         glm::vec3 previousVec = glm::normalize(glm::vec3(points->at(i) - points->at(i - 1)));
         glm::vec3 nextVec = glm::normalize(glm::vec3(points->at(i + 1) - points->at(i)));
 
+        /* never happens
         if(glm::length(nextVec) < 0.5f)
         {
             DCurvePoint d = DCurvePoint(prevBinormal, 0.0f, 0.0f);
             discretePoints.push_back(d);
             continue;
         }
+        */
 
         glm::vec3 curvatureBinormal = glm::normalize(glm::cross(previousVec, nextVec));
         if(i == 1)
@@ -324,6 +326,7 @@ void Curve::discretilize(float segLength)
         discretePoints.push_back(dcp);
     }
 
+    /* never happens
     if(glm::length(startingBinormal) < 0.001f)
     {
         if(startingTangent == glm::vec3(0.0f, 1.0f, 0.0f))
@@ -335,6 +338,7 @@ void Curve::discretilize(float segLength)
             startingBinormal = glm::normalize(startingBinormal - orthogonal);
         }
     }
+    */
 
     targetEndPoint = reconstructFromAngles();
     ComputeFrenetFrames();

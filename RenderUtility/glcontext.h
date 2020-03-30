@@ -48,6 +48,7 @@ public:
     CubeArray cubeArray;
     Cube *selectedCube;
     Curve curve;
+    std::unique_ptr<Shell> shell;
 
     ShaderProgram shaderProgram;
 

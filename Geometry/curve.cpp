@@ -3,8 +3,47 @@
 #include "gurobi_c.h"
 #include "global.h"
 
+
+Shell::Shell(GLContext *context): Drawable(context)
+{
+
+}
+
+void Shell::createGeometry()
+{
+    indexBuffer.clear();
+    vertexBuffer.clear();
+    indexBuffer = ib;
+    vertexBuffer = vb;
+}
+
+void Shell::addCylinder(std::vector<std::vector<glm::vec4>> &cylinder)
+{
+    if (!ib.empty()) return;
+    for (int i = 0; i < cylinder.size() - 1; ++i)
+    {
+        for (int j = 0; j < cylinder[0].size() - 1; ++j)
+        {
+            vector<int> vi{0, 1, 2, 0, 2, 3};
+            for (int &k: vi) k += vb.size() / 3;
+            ib.insert(ib.end(), vi.begin(), vi.end());
+            vector<glm::vec4> vv{cylinder[i][j], _red, _normal,
+                        cylinder[i][j+1], _red, _normal,
+                        cylinder[i+1][j+1], _red, _normal,
+                        cylinder[i+1][j], _red, _normal};
+            /*vector<glm::vec4> vv{glm::vec4{1+i, 1, 1, 1}, _red, _normal,
+                        glm::vec4{1+i, 0, 1, 1}, _red, _normal,
+                        glm::vec4{0+i, 0, 1, 1}, _red, _normal,
+                        glm::vec4{0+i, 1, 1, 1}, _red, _normal};*/
+            vb.insert(vb.end(), vv.begin(), vv.end());
+        }
+    }
+    pl(ib.size(), to_string(vb.size()));
+}
+
 int Curve::numImpulses = 16;
-Curve::Curve(GLContext *context): Drawable(context), points(nullptr), hasAssigned(false)
+Curve::Curve(GLContext *context): Drawable(context), points(nullptr),
+    hasAssigned(false), hasTelescope(false), pSegments(nullptr), shell(nullptr)
 {
 
 }
@@ -37,7 +76,7 @@ int Curve::drawMode()
 
 int Curve::computeNumImpulses()
 {
-    int maxNumShells = std::floor(arcLength / _MIN_SHELL_LENGTH);
+    // int maxNumShells = std::floor(arcLength / _MIN_SHELL_LENGTH);
 
     // Deal with junctures (implment later)
 
@@ -72,10 +111,8 @@ std::vector<float> Curve::evenlySpacePoints(int numSegments)
 
 void Curve::makeImpulseCurve()
 {
-    if(!torsionImpulsePoints.empty())
-    {
-        return;
-    }
+    if (!torsionImpulsePoints.empty()) return;
+
     int numImpulses = computeNumImpulses();
     vector<float> points = evenlySpacePoints(numImpulses);
 
@@ -136,7 +173,7 @@ void Curve::makeImpulseCurve()
     // Add least square error component
     for(int i = 0; i < discretePoints.size(); i++)
     {
-        pl(discretePoints.at(i).twistingAngle);
+        pl(discretePoints.at(i).twistingAngle, to_string(i));
         cumulativeTwist += glm::radians(discretePoints.at(i).twistingAngle);
         float arcPosition = (i + 1) * segmentLength;
 
@@ -230,12 +267,12 @@ void Curve::makeImpulseCurve()
         std::cout<<"Initial frame error!"<<std::endl;
     }
 
-    vector<glm::vec4> newPoints;
-    vector<CurveSegment> segments;
+    // vector<glm::vec4> newPoints;
+    pSegments = make_unique<vector<CurveSegment>>();
     
     // Create initial segment
     CurveSegment prevHelix = CurveSegment(startingPoint, averageCurvature, 0, arcSteps[0], -constTorsion, startFrame);
-    segments.push_back(prevHelix);
+    pSegments->push_back(prevHelix);
     AddPointsOfSegment(prevHelix);
 
     float len = arcSteps[0];
@@ -254,38 +291,137 @@ void Curve::makeImpulseCurve()
 
         len += arcStep;
         AddPointsOfSegment(prevHelix);
-        segments.push_back(prevHelix);
+        pSegments->push_back(prevHelix);
     }
 
     // Add last point
     torsionImpulsePoints.push_back(glm::vec4(transformedHelixPoint(prevHelix, arcSteps.at(arcSteps.size() - 1)), 1.0f));
     this->points->clear();
-    for(int i = 0; i < torsionImpulsePoints.size(); i++)
+    this->points->insert(this->points->end(), torsionImpulsePoints.begin(), torsionImpulsePoints.end());
+}
+
+void Curve::makeTelescope()
+{
+    if (hasTelescope || !pSegments) return;
+    hasTelescope = true;
+
+    float currRadius = 2.f, WALL_THICKNESS = 0.2f;
+    tParams.clear();
+
+    CurveSegment initialSeg = pSegments->at(0);
+    TelescopeParameters inital(initialSeg.arcLength, currRadius,
+                               WALL_THICKNESS, initialSeg.curvature, initialSeg.torsion, 0);
+    tParams.push_back(inital);
+
+    for (int i = 1; i < pSegments->size(); ++i)
     {
-        this->points->push_back(torsionImpulsePoints.at(i));
+        currRadius -= WALL_THICKNESS;
+        TelescopeParameters p(pSegments->at(i).arcLength, currRadius,
+                              WALL_THICKNESS, pSegments->at(i).curvature, pSegments->at(i).torsion, 0);
+        tParams.push_back(p);
     }
 
+    makeShells();
+}
+
+void Curve::makeShells()
+{
+    for (int i = 0; i < tParams.size(); ++i)
+    {
+
+    }
+    generateGeometry(tParams[0], tParams[1]);
+}
+
+void Curve::generateGeometry(TelescopeParameters theParams, TelescopeParameters nextParams)
+{
+    vector<vector<glm::vec4>> circles = generateCylinder(theParams);
+    shell->addCylinder(circles);
+}
+
+vector<vector<glm::vec4>> Curve::generateCylinder(TelescopeParameters tParams)
+{
+    vector<vector<glm::vec4>> circles;
+    float lengthStep = 1.f / (CUTS_PER_CYLINDER - 1);
+
+    for (int i = 0; i < CUTS_PER_CYLINDER; i++)
+    {
+        float currArcLength = i * lengthStep;
+        glm::vec3 centerPoint = translateAlongHelix(tParams.curvature, tParams.torsion, currArcLength);
+        glm::vec3 facingDirection = glm::mat3_cast(getLocalRotationAlongPath(i * lengthStep, tParams.curvature, tParams.torsion, tParams.length)) * glm::vec3(0, 0, 1);
+        glm::vec3 normalDirection = glm::mat3_cast(getLocalRotationAlongPath(i * lengthStep, tParams.curvature, tParams.torsion, tParams.length)) * glm::vec3(0, 1, 0);
+
+        vector<glm::vec4> circle;
+        circle = generateCircle(i, centerPoint, facingDirection, normalDirection, tParams.radius);
+        circles.push_back(circle);
+    }
+    return circles;
+}
+
+void Curve::generateInnerCylinder(TelescopeParameters tParams, float arcOffset)
+{
+
+}
+
+vector<glm::vec4> Curve::generateCircle(int circNum, glm::vec3 centerPoint, glm::vec3 direction, glm::vec3 normal, float radius)
+{
+    vector<glm::vec4> theCirc;
+
+    float angleStep = (2 * glm::pi<float>()) / VERTS_PER_CIRCLE;
+
+    glm::fquat circleRotation = glm::rotation(glm::vec3(0, 0, 1), direction);
+    glm::vec3 initNormal = glm::vec3(0, 1, 0);
+    glm::vec3 rotatedNormal = circleRotation * initNormal;
+
+    float angle = angleBetween(rotatedNormal, normal, direction);
+    glm::fquat normalRotation(angle, direction);
+
+    for (int i = 0; i < VERTS_PER_CIRCLE; ++i)
+    {
+        float currentAngle = i * angleStep;
+        glm::vec3 vert(glm::cos(currentAngle), glm::sin(currentAngle), 0);
+        vert *= radius;
+        vert = circleRotation * vert;
+        vert = normalRotation * vert;
+        vert += centerPoint;
+        theCirc.push_back(glm::vec4(vert, 1));
+    }
+    return theCirc;
+}
+
+glm::fquat Curve::getLocalRotationAlongPath(float t, float curvature, float torsion, float length)
+{
+    if (curvature > 1e-6)
+    {
+        // Convert normalized length to arc length.
+        float arcLength = t * length;
+        glm::fquat rotation = rotateAlongHelix(curvature, torsion, arcLength);
+        return rotation;
+    }
+    else
+    {
+        return glm::fquat(1, 0, 0, 0);
+    }
 }
 
 void Curve::discretilize(float segLength)
 {
+    if(!discretePoints.empty()) return;
+
     //std::cout<"Discretilize!"<<std::endl;
-    if(!discretePoints.empty())
-    {
-        return;
-    }
     //arcLength = calcArcLength();
     //reAssignPoints();
+
     segmentLength = segLength;
     startingPoint = glm::vec3(points->at(0));
     startingTangent = glm::normalize(glm::vec3(points->at(1) - points->at(0)));
 
     glm::vec3 prevBinormal = glm::vec3(0.0f);
 
-    for(int i = 1; i < points->size() - 1; i++)
+    for (int i = 1; i < points->size() - 1; i++)
     {
-        std::cout<<i;
-        pl(points->at(i));
+        //std::cout<<i; pl(points->at(i));
+
         glm::vec3 previousVec = glm::normalize(glm::vec3(points->at(i) - points->at(i - 1)));
         glm::vec3 nextVec = glm::normalize(glm::vec3(points->at(i + 1) - points->at(i)));
 
@@ -299,30 +435,23 @@ void Curve::discretilize(float segLength)
         */
 
         glm::vec3 curvatureBinormal = glm::normalize(glm::cross(previousVec, nextVec));
-        if(i == 1)
-            startingBinormal = curvatureBinormal;
+        if (i == 1) startingBinormal = curvatureBinormal;
 
         // Compute bending angles(curvature)
         float dot = glm::dot(previousVec, nextVec);
         float bendAngle = (dot >= 1) ? 0 : 180.0f * acos(dot) / M_PI;
+
         // Compute twist angles （discrete torsion）
         float twistAngle;
-        if(i == 1)
-            twistAngle = 0;
-        else
-        {
-            twistAngle = angleBetween(prevBinormal, curvatureBinormal, previousVec);
-        }
+        if (i == 1) twistAngle = 0;
+        else twistAngle = angleBetween(prevBinormal, curvatureBinormal, previousVec);
 
-        if(isnan(bendAngle))
-            cout<<"Bend angle is nan"<<endl;
-
-        if(isnan(twistAngle))
-            cout<<"Twist angle is nan"<<endl;
+        if (isnan(bendAngle)) cout<<"Bend angle is nan"<<endl;
+        if (isnan(twistAngle)) cout<<"Twist angle is nan"<<endl;
 
         prevBinormal = curvatureBinormal;
 
-        DCurvePoint dcp = DCurvePoint(glm::normalize(curvatureBinormal), bendAngle, twistAngle);
+        DCurvePoint dcp = DCurvePoint(curvatureBinormal, bendAngle, twistAngle);
         discretePoints.push_back(dcp);
     }
 
@@ -338,14 +467,14 @@ void Curve::discretilize(float segLength)
             startingBinormal = glm::normalize(startingBinormal - orthogonal);
         }
     }
-    */
 
     targetEndPoint = reconstructFromAngles();
     ComputeFrenetFrames();
     ComputeBishopFrames();
-
+    */
 }
 
+/*
 glm::vec3 Curve::reconstructFromAngles()
 {
     points->clear();
@@ -481,6 +610,7 @@ void Curve::ComputeBishopFrames()
         }
     }
 }
+*/
 
 void Curve::AddPointsOfSegment(CurveSegment seg)
 {

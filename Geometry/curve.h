@@ -3,6 +3,18 @@
 
 #include "drawable.h"
 #include "discrete.h"
+class Shell : public Drawable
+{
+public:
+    Shell(GLContext *context);
+
+    void createGeometry() override;
+
+    void addCylinder(std::vector<std::vector<glm::vec4>> &cylinder);
+
+    vector<int> ib;
+    vector<glm::vec4> vb;
+};
 
 class Curve : public Drawable
 {
@@ -31,22 +43,42 @@ public:
 
     void makeImpulseCurve();
 
+    void makeTelescope();
+    void makeShells();
+    void generateGeometry(TelescopeParameters theParams, TelescopeParameters nextParams);
+    vector<vector<glm::vec4>> generateCylinder(TelescopeParameters tParams);
+    void generateInnerCylinder(TelescopeParameters tParams, float arcOffset);
+    vector<glm::vec4> generateCircle(int circNum, glm::vec3 centerPoint, glm::vec3 direction,
+                        glm::vec3 normal, float radius);
+    int VERTS_PER_CIRCLE = 60;
+    int CUTS_PER_CYLINDER = 40;
+    glm::fquat getLocalRotationAlongPath(float t, float curvature, float torsion, float length);
+    Shell *shell;
+
+    vector<TelescopeParameters> tParams;
+
     float segmentLength;
 
-    glm::vec3 reconstructFromAngles();
+    // glm::vec3 reconstructFromAngles();
     void reAssignPoints();
+
+    unique_ptr<vector<CurveSegment>> pSegments;
 private:
     // Calculate arc length
     float calcArcLength();
+    /*
     void ComputeFrenetFrames();
     void ComputeBishopFrames();
+
     void FixFrenetFrames();
     void FixFrenetForward(int start);
     void FixFrenetBackward(int start);
+    */
+
     void AddPointsOfSegment(CurveSegment seg);
     glm::vec3 transformedHelixPoint(CurveSegment cs, float arcLen);
 
-    bool hasAssigned;
+    bool hasAssigned, hasTelescope;
 
 };
 

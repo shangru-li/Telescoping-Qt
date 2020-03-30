@@ -13,6 +13,8 @@
 // glm::to_string.
 #include <glm/gtx/string_cast.hpp>
 
+#include <glm/gtx/quaternion.hpp>
+
 
 #include <QOpenGLWidget>
 #include <QOpenGLFunctions_3_2_Core>

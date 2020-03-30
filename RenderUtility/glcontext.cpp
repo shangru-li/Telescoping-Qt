@@ -4,7 +4,7 @@ GLContext::GLContext(QWidget *parent)
     : QOpenGLWidget(parent), shaderProgram(this), fps(60.f),
       squarePlane(this), cubeArray(this), curve(this),
       selectedCube(nullptr), movingCube(false), canGenerate(true),
-      torsionStage(false), discreteStage(false)
+      torsionStage(false), discreteStage(false), shell(make_unique<Shell>(this))
 {
     connect(&timer, SIGNAL(timeout()), this, SLOT(timerUpdate())); // when it's time to update a frame
     timer.start(glm::round(1000 / fps)); // update every 16 ms
@@ -37,6 +37,7 @@ void GLContext::initializeGL()
     setFocus();
 
     cubeArray.addCube(glm::scale(glm::mat4(1.f), glm::vec3(0.5,0.5,0.5)), Cube::GENERATOR);
+    curve.shell = shell.get();
 }
 
 void GLContext::paintGL()
@@ -49,12 +50,13 @@ void GLContext::paintGL()
     }
 
     curve.update();
-
+    shell->update();
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     shaderProgram.setModelViewProj(camera->getViewProj());
     shaderProgram.draw(cubeArray);
     shaderProgram.draw(curve);
+    shaderProgram.draw(*shell);
 }
 
 void GLContext::keyPressEvent(QKeyEvent *e)
@@ -76,6 +78,10 @@ void GLContext::keyPressEvent(QKeyEvent *e)
     {
         curve.makeImpulseCurve();
         torsionStage = true;
+    }
+    if (e->key() == 'I')
+    {
+        curve.makeTelescope();
     }
 }
 

@@ -24,6 +24,7 @@ public:
         return OrthonormalFrame(rotT, rotN, rotB);
     }
 
+    /*
     static OrthonormalFrame Slerp(OrthonormalFrame frame1, OrthonormalFrame frame2, float t)
     {
         glm::vec3 tangent1 = frame1.T;
@@ -46,6 +47,7 @@ public:
 
         return OrthonormalFrame(tangent, normal, binormal);
     }
+    */
 };
 
 // User defined curve point
@@ -68,8 +70,10 @@ public:
     DCurvePoint(glm::vec3 dir, float bendAngle, float twistAngle) :
         binormal(dir), bendingAngle(bendAngle), twistingAngle(twistAngle) {}
 
+    /*
     void ComputeFrenet(glm::vec3 prevPos, glm::vec3 nextPos)
     {
+        pl(position, "pos");
         glm::vec3 tangent = glm::normalize(nextPos - position);
         glm::vec3 prevTangent = glm::normalize(position - prevPos);
         glm::vec3 binormal = glm::normalize(glm::cross(prevTangent, tangent));
@@ -108,6 +112,7 @@ public:
     {
         return PropagateBishop(prev.position, next.position, prevFrame);
     }
+    */
 };
 
 class CurveSegment
@@ -117,11 +122,30 @@ public:
     float curvature;
     float impulse;
     float arcLength;
-    OrthonormalFrame frame;
     float torsion;
+    OrthonormalFrame frame;
 
     CurveSegment(glm::vec3 pos, float curv, float imp, float arc, float tor, OrthonormalFrame _frame):
         startPosition(pos), curvature(curv), impulse(imp), arcLength(arc), torsion(tor), frame(_frame) {}
+};
+
+struct TelescopeParameters
+{
+    float length;
+    float radius;
+    float thickness;
+    float curvature;
+    float torsion;
+    float twistFromParent;
+
+    TelescopeParameters(float length, float radius, float thickness,
+        float curvature, float torsion, float twistImpulse):
+            length(length),
+            radius(radius),
+            thickness(thickness),
+            curvature(curvature),
+            torsion(torsion),
+            twistFromParent(twistImpulse) {}
 };
 
 static glm::fquat rotateAlongCircle(float curvatureAmount, float arcLength);
@@ -238,8 +262,6 @@ static glm::vec3 translateAlongHelix(float curvature, float torsion, float arcLe
     return correctiveR * pos;
 }
 
-
-
 static glm::vec3 translateAlongCircle(float curvatureAmount, float arcLength)
 {
     if (curvatureAmount > 1e-6)
@@ -269,8 +291,6 @@ static glm::vec3 translateAlongCircle(float curvatureAmount, float arcLength)
     }
 }
 
-
-
 static OrthonormalFrame transformedHelixFrame(CurveSegment cs, float arcLen)
 {
    // Apply the local helix rotation.
@@ -279,6 +299,5 @@ static OrthonormalFrame transformedHelixFrame(CurveSegment cs, float arcLen)
    OrthonormalFrame newFrame = cs.frame.RotateBy(newRot);
    return newFrame;
 }
-
 
 #endif // DISCRETE_H

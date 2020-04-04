@@ -138,14 +138,19 @@ struct TelescopeParameters
     float torsion;
     float twistFromParent;
 
+    glm::vec3 startPosition;
+    OrthonormalFrame frame;
+
     TelescopeParameters(float length, float radius, float thickness,
-        float curvature, float torsion, float twistImpulse):
+        float curvature, float torsion, float twistImpulse,
+                        glm::vec3 startPosition, OrthonormalFrame frame):
             length(length),
             radius(radius),
             thickness(thickness),
             curvature(curvature),
             torsion(torsion),
-            twistFromParent(twistImpulse) {}
+            twistFromParent(twistImpulse),
+    startPosition(startPosition), frame(frame){}
 };
 
 static glm::fquat rotateAlongCircle(float curvatureAmount, float arcLength);

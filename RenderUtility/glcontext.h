@@ -48,9 +48,8 @@ public:
     CubeArray cubeArray;
     Cube *selectedCube;
     Curve curve;
-    std::unique_ptr<Shell> shell;
 
-    ShaderProgram shaderProgram;
+    ShaderProgram shaderProgram, shaderProgramFlat;
 
     std::unique_ptr<Camera> camera;
 
@@ -62,6 +61,7 @@ public:
     bool discreteStage;
     bool torsionStage;
 
+    void printGLErrorLog();
 private:
     QTimer timer; // controls frame rate
     GLuint vao; // handle for vao

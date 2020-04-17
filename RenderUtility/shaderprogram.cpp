@@ -50,6 +50,14 @@ void ShaderProgram::setModelViewProj(glm::mat4 viewProj, glm::mat4 model)
     useMe();
     if (unifViewProj != -1) context->glUniformMatrix4fv(unifViewProj, 1, GL_FALSE, &viewProj[0][0]);
     if (unifModel != -1) context->glUniformMatrix4fv(unifModel, 1, GL_FALSE, &model[0][0]);
+    glm::mat4 modelInvTr = glm::inverse(glm::transpose(model));
+    if (unifModelInvTr != -1)  context->glUniformMatrix4fv(unifModelInvTr, 1, GL_FALSE, &modelInvTr[0][0]);
+}
+
+void ShaderProgram::setCamPos(glm::vec4 camPos)
+{
+    useMe();
+    if (unifCamPos != -1) context->glUniform4fv(unifCamPos, 1, &camPos[0]);
 }
 
 void ShaderProgram::create(const char *vertexFile, const char *fragmentFile)
@@ -81,4 +89,6 @@ void ShaderProgram::create(const char *vertexFile, const char *fragmentFile)
 
     unifModel = context->glGetUniformLocation(hProgram, "u_Model");
     unifViewProj = context->glGetUniformLocation(hProgram, "u_ViewProj");
+    unifModelInvTr = context->glGetUniformLocation(hProgram, "u_ModelInvTr");
+    unifCamPos = context->glGetUniformLocation(hProgram, "u_CamPos");
 }

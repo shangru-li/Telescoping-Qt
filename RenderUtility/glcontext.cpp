@@ -1,14 +1,17 @@
 #include "glcontext.h"
 
 GLContext::GLContext(QWidget *parent)
-    : QOpenGLWidget(parent), shaderProgram(this), fps(60.f),
+    : QOpenGLWidget(parent),
+      shaderProgram(this), shaderProgramFlat(this),
+      fps(60.f),
       squarePlane(this), cubeArray(this), curve(this),
       selectedCube(nullptr), movingCube(false), canGenerate(true),
-      torsionStage(false), discreteStage(false), shell(make_unique<Shell>(this))
+      torsionStage(false), discreteStage(false)
 {
     connect(&timer, SIGNAL(timeout()), this, SLOT(timerUpdate())); // when it's time to update a frame
     timer.start(glm::round(1000 / fps)); // update every 16 ms
     for (bool &state : keyboardStates) state = false;
+    for (int i = 0; i < Curve::numImpulses; ++i) curve.shells.push_back(make_unique<Shell>(this));
 }
 
 GLContext::~GLContext() {
@@ -28,16 +31,25 @@ void GLContext::initializeGL()
 
     glPointSize(5);
 
-    glClearColor(0, 0, 0, 1);
+    glClearColor(1, 1, 1, 1);
 
     glGenVertexArrays(1, &vao);
 
     shaderProgram.create(":/resources/basic.vert.glsl", ":/resources/basic.frag.glsl");
+    shaderProgramFlat.create(":/resources/flat.vert.glsl", ":/resources/flat.frag.glsl");
     camera = std::make_unique<Camera>((float)width() / height(), 90.f, glm::vec3(0, 0, -5), glm::vec3(0, 0, 0));
     setFocus();
 
     cubeArray.addCube(glm::scale(glm::mat4(1.f), glm::vec3(0.5,0.5,0.5)), Cube::GENERATOR);
-    curve.shell = shell.get();
+}
+
+float getCurrentState(float t, int num, int grid)
+{
+    float step = 1.f / num;
+    int currNum = t / step;
+    if (grid < currNum) return 1;
+    if (grid > currNum) return 0;
+    return (t - currNum * step) / step;
 }
 
 void GLContext::paintGL()
@@ -50,13 +62,34 @@ void GLContext::paintGL()
     }
 
     curve.update();
-    shell->update();
+    for (unique_ptr<Shell> &pShell : curve.shells) pShell->update();
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    shaderProgram.setModelViewProj(camera->getViewProj());
-    shaderProgram.draw(cubeArray);
-    shaderProgram.draw(curve);
-    shaderProgram.draw(*shell);
+    printGLErrorLog();
+
+    shaderProgram.setCamPos(glm::vec4(camera->eye, 1));
+    shaderProgramFlat.setModelViewProj(camera->getViewProj());
+    shaderProgramFlat.draw(cubeArray);
+    shaderProgramFlat.draw(curve);
+
+    if (!curve.tParams.empty())for (int i = 0; i < curve.tParams.size() - 1; ++i)
+    {
+        //float currentState = curve.extensionExtent;
+        float currentState = getCurrentState(curve.extensionExtent, curve.numImpulses - 1, i);
+        pl(currentState);
+        //glm::vec3 position = curve.transformedHelixPoint(curve.pSegments->at(i+1), currentState * curve.pSegments->at(i+1).arcLength);
+        //OrthonormalFrame f = transformedHelixFrame(curve.pSegments->at(i+1), currentState * curve.pSegments->at(i+1).arcLength);
+        glm::vec3 position = curve.transformedHelixPoint(curve.pSegments->at(i), currentState * curve.pSegments->at(i+1).arcLength);
+        OrthonormalFrame f = transformedHelixFrame(curve.pSegments->at(i), currentState * curve.pSegments->at(i+1).arcLength);
+        glm::mat4 relative = glm::mat4(glm::vec4(f.B, 0), glm::vec4(f.N, 0), glm::vec4(f.T, 0), glm::vec4(position, 1));
+        curve.shells[i+1]->animatedTransform = curve.shells[i]->animatedTransform * glm::inverse(curve.shells[i]->transform) * relative;
+
+    }
+    for (unique_ptr<Shell> &pShell : curve.shells)
+    {
+        shaderProgram.setModelViewProj(camera->getViewProj(), pShell->animatedTransform);
+        shaderProgram.draw(*pShell);
+    }
 }
 
 void GLContext::keyPressEvent(QKeyEvent *e)
@@ -82,6 +115,11 @@ void GLContext::keyPressEvent(QKeyEvent *e)
     if (e->key() == 'I')
     {
         curve.makeTelescope();
+    }
+    if (e->key() == 'Z')
+    {
+        if (curve.extensionState == Curve::EXTENDED) curve.extensionState = Curve::RETRACTING;
+        else if (curve.extensionState == Curve::RETRACTED) curve.extensionState = Curve::EXTENDING;
     }
 }
 
@@ -171,5 +209,41 @@ void GLContext::timerUpdate()
     if (keyboardStates['Q']) camera->zoom(-zoomLength);
     if (keyboardStates['E']) camera->zoom(zoomLength);
 
+    if (curve.extensionState == Curve::EXTENDING)
+    {
+        curve.extensionExtent += 6.f / Curve::numImpulses / fps;
+        if (curve.extensionExtent > 1.f)
+        {
+            curve.extensionState = Curve::EXTENDED;
+            curve.extensionExtent = 1.f;
+        }
+    }
+    else if (curve.extensionState == Curve::RETRACTING)
+    {
+        curve.extensionExtent -= 6.f / Curve::numImpulses / fps;
+        if (curve.extensionExtent < 0.f)
+        {
+            curve.extensionState = Curve::RETRACTED;
+            curve.extensionExtent = 0.f;
+        }
+    }
+    //pl(curve.extensionExtent);
+    //pl(curve.extensionState, "state");
     update(); // update the widget
+}
+
+void GLContext::printGLErrorLog()
+{
+    GLenum error = glGetError();
+    if (error != GL_NO_ERROR) {
+        std::cerr << "OpenGL error " << error << ": ";
+        const char *e =
+            error == GL_INVALID_OPERATION             ? "GL_INVALID_OPERATION" :
+            error == GL_INVALID_ENUM                  ? "GL_INVALID_ENUM" :
+            error == GL_INVALID_VALUE                 ? "GL_INVALID_VALUE" :
+            error == GL_INVALID_INDEX                 ? "GL_INVALID_INDEX" :
+            error == GL_INVALID_OPERATION             ? "GL_INVALID_OPERATION" :
+            QString::number(error).toUtf8().constData();
+        std::cerr << e << std::endl;
+    }
 }

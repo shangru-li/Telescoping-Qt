@@ -10,10 +10,14 @@ public:
 
     void createGeometry() override;
 
-    void addCylinder(std::vector<std::vector<glm::vec4>> &cylinder);
+    void addCylinder(const std::vector<std::vector<glm::vec4>> &cylinder, glm::vec4 color = _red);
 
     vector<int> ib;
     vector<glm::vec4> vb;
+
+    vector<vector<vector<glm::vec4>>> cylinders;
+
+    glm::mat4 transform, animatedTransform;
 };
 
 class Curve : public Drawable
@@ -45,15 +49,21 @@ public:
 
     void makeTelescope();
     void makeShells();
-    void generateGeometry(TelescopeParameters theParams, TelescopeParameters nextParams);
-    vector<vector<glm::vec4>> generateCylinder(TelescopeParameters tParams);
+    vector<vector<glm::vec4>> generateGeometry(TelescopeParameters theParams, TelescopeParameters nextParams);
+    vector<vector<glm::vec4>> generateCylinder(TelescopeParameters tParams, float nextRadius = 0.f);
     void generateInnerCylinder(TelescopeParameters tParams, float arcOffset);
     vector<glm::vec4> generateCircle(int circNum, glm::vec3 centerPoint, glm::vec3 direction,
                         glm::vec3 normal, float radius);
-    int VERTS_PER_CIRCLE = 60;
+    int VERTS_PER_CIRCLE = 100;
     int CUTS_PER_CYLINDER = 40;
     glm::fquat getLocalRotationAlongPath(float t, float curvature, float torsion, float length);
-    Shell *shell;
+    vector<unique_ptr<Shell>> shells;
+
+    glm::mat4 getCurrentTransform(TelescopeParameters tParams, float t);
+
+    enum ExtensionState { RETRACTED, EXTENDED, RETRACTING, EXTENDING };
+    ExtensionState extensionState;
+    float extensionExtent;
 
     vector<TelescopeParameters> tParams;
 
@@ -63,7 +73,7 @@ public:
     void reAssignPoints();
 
     unique_ptr<vector<CurveSegment>> pSegments;
-private:
+//private:
     // Calculate arc length
     float calcArcLength();
     /*

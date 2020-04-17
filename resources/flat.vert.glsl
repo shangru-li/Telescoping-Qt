@@ -16,9 +16,5 @@ uniform vec4 u_CamPos;
 void main()
 {
     fs_Color = vs_Color;
-    fs_Normal = normalize(u_ModelInvTr * vs_Normal);
-
-    vec4 modelPosition = u_Model * vs_Position;
-    fs_LightVector = normalize(u_CamPos - modelPosition);
-    gl_Position = u_ViewProj * modelPosition;
+    gl_Position = u_ViewProj * u_Model * vs_Position;
 }

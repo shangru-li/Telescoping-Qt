@@ -4,7 +4,7 @@
 #include "global.h"
 
 
-Shell::Shell(GLContext *context): Drawable(context)
+Shell::Shell(GLContext *context): Drawable(context), transform(glm::mat4(1.f)), animatedTransform(glm::mat4(1.f))
 {
 
 }
@@ -17,10 +17,9 @@ void Shell::createGeometry()
     vertexBuffer = vb;
 }
 
-void Shell::addCylinder(std::vector<std::vector<glm::vec4>> &cylinder)
+void Shell::addCylinder(const std::vector<std::vector<glm::vec4>> &cylinder, glm::vec4 color)
 {
-    //if (!ib.empty()) return;
-    pl(cylinder.size(), "numCirc");
+    if (!ib.empty()) return;
     for (int i = 0; i < cylinder.size() - 1; ++i)
     {
         for (int j = 0; j < cylinder[0].size() - 1; ++j)
@@ -28,27 +27,32 @@ void Shell::addCylinder(std::vector<std::vector<glm::vec4>> &cylinder)
             vector<int> vi{0, 1, 2, 0, 2, 3};
             for (int &k: vi) k += vb.size() / 3;
             ib.insert(ib.end(), vi.begin(), vi.end());
-            vector<glm::vec4> vv{cylinder[i][j], _red, _normal,
-                        cylinder[i][j+1], _red, _normal,
-                        cylinder[i+1][j+1], _red, _normal,
-                        cylinder[i+1][j], _red, _normal};
+            glm::vec3 v0(cylinder[i][j]), v1(cylinder[i][j+1]), v2(cylinder[i+1][j]);
+            glm::vec4 thisNormal = glm::vec4(glm::normalize(glm::cross(v1 - v0, v2 - v0)), 0);
+            vector<glm::vec4> vv{cylinder[i][j], color, thisNormal,
+                        cylinder[i][j+1], color, thisNormal,
+                        cylinder[i+1][j+1], color, thisNormal,
+                        cylinder[i+1][j], color, thisNormal};
             vb.insert(vb.end(), vv.begin(), vv.end());
         }
 
         vector<int> vi{0, 1, 2, 0, 2, 3};
         for (int &k: vi) k += vb.size() / 3;
         ib.insert(ib.end(), vi.begin(), vi.end());
-        vector<glm::vec4> vv{cylinder[i][cylinder[0].size() - 1], _red, _normal,
-                    cylinder[i][0], _red, _normal,
-                    cylinder[i+1][0], _red, _normal,
-                    cylinder[i+1][cylinder[0].size() - 1], _red, _normal};
+        glm::vec3 v0(cylinder[i][cylinder[0].size() - 1]), v1(cylinder[i][0]), v2(cylinder[i+1][cylinder[0].size() - 1]);
+        glm::vec4 thisNormal = glm::vec4(glm::normalize(glm::cross(v1 - v0, v2 - v0)), 0);
+        vector<glm::vec4> vv{cylinder[i][cylinder[0].size() - 1], color, thisNormal,
+                    cylinder[i][0], color, thisNormal,
+                    cylinder[i+1][0], color, thisNormal,
+                    cylinder[i+1][cylinder[0].size() - 1], color, thisNormal};
         vb.insert(vb.end(), vv.begin(), vv.end());
     }
 }
 
-int Curve::numImpulses = 6;
+int Curve::numImpulses = 10;
 Curve::Curve(GLContext *context): Drawable(context), points(nullptr),
-    hasAssigned(false), hasTelescope(false), pSegments(nullptr), shell(nullptr)
+    hasAssigned(false), hasTelescope(false), pSegments(nullptr),
+    extensionState(EXTENDED), extensionExtent(1.f)
 {
 
 }
@@ -64,11 +68,11 @@ void Curve::createGeometry()
             indexBuffer.push_back(i);
             indexBuffer.push_back(i + 1);
             vertexBuffer.push_back(points->at(i));
-            vertexBuffer.push_back(_white);
+            vertexBuffer.push_back(_black);
             vertexBuffer.push_back(_normal);
         }
         vertexBuffer.push_back(points->at(points->size() - 1));
-        vertexBuffer.push_back(_white);
+        vertexBuffer.push_back(_black);
         vertexBuffer.push_back(_normal);
     }
     //calcArcLength();
@@ -178,7 +182,7 @@ void Curve::makeImpulseCurve()
     // Add least square error component
     for(int i = 0; i < discretePoints.size(); i++)
     {
-        pl(discretePoints.at(i).twistingAngle, to_string(i));
+        //pl(discretePoints.at(i).twistingAngle, to_string(i));
         cumulativeTwist += glm::radians(discretePoints.at(i).twistingAngle);
         float arcPosition = (i + 1) * segmentLength;
 
@@ -310,7 +314,7 @@ void Curve::makeTelescope()
     if (hasTelescope || !pSegments) return;
     hasTelescope = true;
 
-    float currRadius = 0.8f, WALL_THICKNESS = 0.1f;
+    float currRadius = 0.8f, WALL_THICKNESS = 0.08f;
     tParams.clear();
 
     CurveSegment initialSeg = pSegments->at(0);
@@ -333,19 +337,25 @@ void Curve::makeShells()
 {
     for (int i = 0; i < tParams.size(); ++i)
     {
-        generateGeometry(tParams[i], tParams[i]);
-        pl(tParams.size(), "siz");
+        tParams[i].shellNumber = i;
+        //shells[i]->addCylinder(generateGeometry(tParams[i], tParams[i]), i % 2 ? _black : _yellow);
+        glm::vec4 color1 = glm::vec4(1, 0.6, 0.6, 1), color2 = glm::vec4(0.6, 0.6, 1, 1);
+        shells[i]->addCylinder(generateCylinder(tParams[i]), i % 2 ? color1 : color2);
+        shells[i]->addCylinder(generateCylinder(tParams[i], i == tParams.size() - 1 ? 0.01f : tParams[i + 1].radius), i % 2 ? color1 : color2);
+        //pl(tParams.size(), "siz");
+        OrthonormalFrame f = tParams[i].frame;
+        shells[i]->transform = glm::mat4(glm::vec4(f.B, 0), glm::vec4(f.N, 0), glm::vec4(f.T, 0), glm::vec4(tParams[i].startPosition, 1));
+        shells[i]->animatedTransform = shells[i]->transform;
     }
-    //generateGeometry(tParams[0], tParams[1]);
 }
 
-void Curve::generateGeometry(TelescopeParameters theParams, TelescopeParameters nextParams)
+vector<vector<glm::vec4>> Curve::generateGeometry(TelescopeParameters theParams, TelescopeParameters nextParams)
 {
-    vector<vector<glm::vec4>> circles = generateCylinder(theParams);
-    shell->addCylinder(circles);
+    return generateCylinder(theParams);
+    //shell->addCylinder(circles);
 }
 
-vector<vector<glm::vec4>> Curve::generateCylinder(TelescopeParameters tParams)
+vector<vector<glm::vec4>> Curve::generateCylinder(TelescopeParameters tParams, float nextRadius)
 {
     vector<vector<glm::vec4>> circles;
     float lengthStep = 1.f / (CUTS_PER_CYLINDER - 1);
@@ -356,24 +366,24 @@ vector<vector<glm::vec4>> Curve::generateCylinder(TelescopeParameters tParams)
         glm::vec3 centerPoint = translateAlongHelix(tParams.curvature, tParams.torsion, currArcLength * tParams.length);
         glm::vec3 facingDirection = glm::mat3_cast(getLocalRotationAlongPath(i * lengthStep, tParams.curvature, tParams.torsion, tParams.length)) * glm::vec3(0, 0, 1);
         glm::vec3 normalDirection = glm::mat3_cast(getLocalRotationAlongPath(i * lengthStep, tParams.curvature, tParams.torsion, tParams.length)) * glm::vec3(0, 1, 0);
-        pl(facingDirection, "face");
-        pl(normalDirection, "norm");
+        //pl(facingDirection, "face");
+        //pl(normalDirection, "norm");
         vector<glm::vec4> circle;
-        circle = generateCircle(i, centerPoint, facingDirection, normalDirection, tParams.radius);
-        pl(centerPoint, "centerPoint");
+        circle = generateCircle(i, centerPoint, facingDirection, normalDirection, nextRadius == 0.f ? tParams.radius : nextRadius);
+        //pl(centerPoint, "centerPoint");
         circles.push_back(circle);
     }
 
-    for (vector<glm::vec4> &circle: circles)
+
+    /*for (vector<glm::vec4> &circle: circles)
     {
         for (glm::vec4 &vertex: circle)
         {
-            OrthonormalFrame f = tParams.frame;
             glm::mat4 m = glm::mat4(glm::vec4(f.B, 0), glm::vec4(f.N, 0), glm::vec4(f.T, 0), glm::vec4(0, 0, 0, 1));
             vertex = m * vertex;
             vertex += glm::vec4(tParams.startPosition, 0);
         }
-    }
+    }*/
     return circles;
 }
 
@@ -421,6 +431,13 @@ glm::fquat Curve::getLocalRotationAlongPath(float t, float curvature, float tors
     {
         return glm::fquat(1, 0, 0, 0);
     }
+}
+
+glm::mat4 Curve::getCurrentTransform(TelescopeParameters tParams, float t)
+{
+    glm::vec3 location = translateAlongHelix(tParams.curvature, tParams.torsion, t * tParams.length);
+    glm::mat3 rotation = glm::mat3_cast(getLocalRotationAlongPath(t, tParams.curvature, tParams.torsion, tParams.length));
+    return glm::mat4(glm::vec4(rotation[0], 0), glm::vec4(rotation[1], 0), glm::vec4(rotation[2], 0), glm::vec4(location, 1));
 }
 
 void Curve::discretilize(float segLength)

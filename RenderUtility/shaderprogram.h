@@ -13,6 +13,7 @@ public:
     void draw(Drawable &drawable);
 
     void setModelViewProj(glm::mat4 viewProj, glm::mat4 model = glm::mat4(1.f));
+    void setCamPos(glm::vec4 camPos);
 
     inline void useMe();
 
@@ -20,7 +21,7 @@ public:
 
     // handles to the shader variables
     int attrPosition, attrColor, attrNormal;
-    int unifViewProj, unifModel;
+    int unifViewProj, unifModel, unifModelInvTr, unifCamPos;
 
 protected:
     GLContext *context;

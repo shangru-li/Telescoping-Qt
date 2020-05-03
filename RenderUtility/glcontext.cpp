@@ -80,11 +80,35 @@ void GLContext::paintGL()
         pl(currentState);
         //glm::vec3 position = curve.transformedHelixPoint(curve.pSegments->at(i+1), currentState * curve.pSegments->at(i+1).arcLength);
         //OrthonormalFrame f = transformedHelixFrame(curve.pSegments->at(i+1), currentState * curve.pSegments->at(i+1).arcLength);
-        glm::vec3 position = curve.transformedHelixPoint(curve.pSegments->at(i), currentState * curve.pSegments->at(i+1).arcLength);
-        OrthonormalFrame f = transformedHelixFrame(curve.pSegments->at(i), currentState * curve.pSegments->at(i+1).arcLength);
+
+
+        // method 1
+        glm::vec3 position = curve.transformedHelixPoint(curve.pSegments->at(i+1), currentState * -curve.pSegments->at(i+1).arcLength);
+        OrthonormalFrame f = transformedHelixFrame(curve.pSegments->at(i+1), currentState * -curve.pSegments->at(i+1).arcLength);
+
         glm::mat4 relative = glm::mat4(glm::vec4(f.B, 0), glm::vec4(f.N, 0), glm::vec4(f.T, 0), glm::vec4(position, 1));
         curve.shells[i+1]->animatedTransform = curve.shells[i]->animatedTransform * glm::inverse(curve.shells[i]->transform) * relative;
 
+        /*
+        // method 2
+        CurveSegment cs0 = curve.pSegments->at(i), cs1 = curve.pSegments->at(i+1);
+
+        glm::vec3 baseTranslation = curve.childBasedPosition(cs0, cs1);
+        glm::mat3 baseRotation = curve.childBasedRotation(cs0, cs1);
+
+        glm::vec3 localTranslation = translateAlongHelix(cs1.curvature, cs1.torsion, currentState * cs1.arcLength);
+        glm::mat3 localRotation = glm::mat3_cast(rotateAlongHelix(cs1.curvature, cs1.torsion, currentState * cs1.arcLength));
+
+        glm::vec3 localPositionParent = baseRotation * localTranslation + baseTranslation;
+        glm::mat3 localRotationParent = baseRotation * localRotation;
+
+
+        glm::mat4 relativeToParent(glm::vec4(localRotationParent[0], 0),
+                glm::vec4(localRotationParent[1], 0),
+                glm::vec4(localRotationParent[2], 0),
+                glm::vec4(localPositionParent, 1));
+        curve.shells[i+1]->animatedTransform = curve.shells[i]->animatedTransform * relativeToParent;
+        */
     }
     for (unique_ptr<Shell> &pShell : curve.shells)
     {

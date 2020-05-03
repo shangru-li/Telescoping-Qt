@@ -668,6 +668,23 @@ glm::vec3 Curve::transformedHelixPoint(CurveSegment cs, float arcLen)
     return world;
 }
 
+glm::vec3 Curve::childBasedPosition(CurveSegment parent, CurveSegment child)
+{
+    glm::vec3 translationToBase = translateAlongHelix(parent.curvature, parent.torsion, parent.arcLength);
+    glm::fquat rotationToBase = rotateAlongHelix(parent.curvature, parent.torsion, parent.arcLength);
+    glm::vec3 translationBackwards = translateAlongHelix(child.curvature, child.torsion, -child.arcLength);
+
+    translationToBase = translationToBase + (glm::mat3_cast(rotationToBase) * translationBackwards);
+    return translationToBase;
+}
+
+glm::mat3 Curve::childBasedRotation(CurveSegment parent, CurveSegment child)
+{
+    glm::fquat rotationToBase = rotateAlongHelix(parent.curvature, parent.torsion, parent.arcLength);
+    glm::fquat rotationBack = rotateAlongHelix(child.curvature, child.torsion, -child.arcLength);
+    return glm::mat3_cast(rotationToBase * rotationBack);
+}
+
 void Curve::reAssignPoints()
 {
     if (hasAssigned) return;

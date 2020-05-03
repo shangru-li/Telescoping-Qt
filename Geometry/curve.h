@@ -90,6 +90,9 @@ public:
 
     bool hasAssigned, hasTelescope;
 
+
+    glm::vec3 childBasedPosition(CurveSegment parent, CurveSegment child);
+    glm::mat3 childBasedRotation(CurveSegment parent, CurveSegment child);
 };
 
 

@@ -82,16 +82,17 @@ void GLContext::paintGL()
         //OrthonormalFrame f = transformedHelixFrame(curve.pSegments->at(i+1), currentState * curve.pSegments->at(i+1).arcLength);
 
 
+        CurveSegment cs0 = curve.pSegments->at(i), cs1 = curve.pSegments->at(i+1);
+        pl(cs0.impulse, "u");
         // method 1
-        glm::vec3 position = curve.transformedHelixPoint(curve.pSegments->at(i+1), currentState * -curve.pSegments->at(i+1).arcLength);
-        OrthonormalFrame f = transformedHelixFrame(curve.pSegments->at(i+1), currentState * -curve.pSegments->at(i+1).arcLength);
+        glm::vec3 position = curve.transformedHelixPoint(cs1, (1-currentState) * -cs1.arcLength);
+        OrthonormalFrame f = transformedHelixFrame(cs1, (1-currentState) * -cs1.arcLength);
 
         glm::mat4 relative = glm::mat4(glm::vec4(f.B, 0), glm::vec4(f.N, 0), glm::vec4(f.T, 0), glm::vec4(position, 1));
         curve.shells[i+1]->animatedTransform = curve.shells[i]->animatedTransform * glm::inverse(curve.shells[i]->transform) * relative;
 
         /*
         // method 2
-        CurveSegment cs0 = curve.pSegments->at(i), cs1 = curve.pSegments->at(i+1);
 
         glm::vec3 baseTranslation = curve.childBasedPosition(cs0, cs1);
         glm::mat3 baseRotation = curve.childBasedRotation(cs0, cs1);

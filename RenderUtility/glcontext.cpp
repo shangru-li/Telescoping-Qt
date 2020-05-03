@@ -72,6 +72,7 @@ void GLContext::paintGL()
     shaderProgramFlat.draw(cubeArray);
     shaderProgramFlat.draw(curve);
 
+
     if (!curve.tParams.empty())for (int i = 0; i < curve.tParams.size() - 1; ++i)
     {
         //float currentState = curve.extensionExtent;

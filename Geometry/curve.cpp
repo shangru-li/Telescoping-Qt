@@ -341,7 +341,7 @@ void Curve::makeShells()
         //shells[i]->addCylinder(generateGeometry(tParams[i], tParams[i]), i % 2 ? _black : _yellow);
         glm::vec4 color1 = glm::vec4(1, 0.6, 0.6, 1), color2 = glm::vec4(0.6, 0.6, 1, 1);
         shells[i]->addCylinder(generateCylinder(tParams[i]), i % 2 ? color1 : color2);
-        shells[i]->addCylinder(generateCylinder(tParams[i], i == tParams.size() - 1 ? 0.01f : tParams[i + 1].radius), i % 2 ? color1 : color2);
+        ///shells[i]->addCylinder(generateCylinder(tParams[i], i == tParams.size() - 1 ? 0.01f : tParams[i + 1].radius), i % 2 ? color1 : color2);
         //pl(tParams.size(), "siz");
         OrthonormalFrame f = tParams[i].frame;
         shells[i]->transform = glm::mat4(glm::vec4(f.B, 0), glm::vec4(f.N, 0), glm::vec4(f.T, 0), glm::vec4(tParams[i].startPosition, 1));

@@ -34,9 +34,10 @@ public:
     glm::vec3 startingBinormal;
     glm::vec3 targetEndPoint;
 
-//    // Compute discrete points
+    // Compute discrete points
     void discretilize(float segLength = 0.1f);
-//    // Calculte shell fragment number of given curve
+
+    // Calculte shell fragment number of given curve
     int computeNumImpulses();
 
     static int numImpulses;
@@ -49,9 +50,7 @@ public:
 
     void makeTelescope();
     void makeShells();
-    vector<vector<glm::vec4>> generateGeometry(TelescopeParameters theParams, TelescopeParameters nextParams);
     vector<vector<glm::vec4>> generateCylinder(TelescopeParameters tParams, float nextRadius = 0.f);
-    void generateInnerCylinder(TelescopeParameters tParams, float arcOffset);
     vector<glm::vec4> generateCircle(int circNum, glm::vec3 centerPoint, glm::vec3 direction,
                         glm::vec3 normal, float radius);
     int VERTS_PER_CIRCLE = 100;
@@ -73,17 +72,9 @@ public:
     void reAssignPoints();
 
     unique_ptr<vector<CurveSegment>> pSegments;
-//private:
+
     // Calculate arc length
     float calcArcLength();
-    /*
-    void ComputeFrenetFrames();
-    void ComputeBishopFrames();
-
-    void FixFrenetFrames();
-    void FixFrenetForward(int start);
-    void FixFrenetBackward(int start);
-    */
 
     void AddPointsOfSegment(CurveSegment seg);
     glm::vec3 transformedHelixPoint(CurveSegment cs, float arcLen);

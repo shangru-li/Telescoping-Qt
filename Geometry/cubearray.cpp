@@ -9,10 +9,7 @@ glm::vec4 CubeArray::p5{SIZE, -SIZE, SIZE, 1};
 glm::vec4 CubeArray::p6{SIZE, SIZE, -SIZE, 1};
 glm::vec4 CubeArray::p7{SIZE, SIZE, SIZE, 1};
 
-CubeArray::CubeArray(GLContext *context): Drawable(context)
-{
-
-}
+CubeArray::CubeArray(GLContext *context): Drawable(context) {}
 
 void CubeArray::createGeometry()
 {

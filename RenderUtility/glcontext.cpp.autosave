@@ -73,17 +73,18 @@ void GLContext::paintGL()
     shaderProgramFlat.draw(curve);
 
 
-    if (!curve.tParams.empty())for (int i = 0; i < curve.tParams.size() - 1; ++i)
-    {
-        float currentState = getCurrentState(curve.extensionExtent, curve.numImpulses - 1, i);
-
-        CurveSegment cs1 = curve.pSegments->at(i+1);
-        glm::vec3 position = curve.transformedHelixPoint(cs1, (1 - currentState) * -cs1.arcLength);
-        OrthonormalFrame f = transformedHelixFrame(cs1, (1 - currentState) * -cs1.arcLength);
-
-        glm::mat4 relative = glm::mat4(glm::vec4(f.B, 0), glm::vec4(f.N, 0), glm::vec4(f.T, 0), glm::vec4(position, 1));
-        curve.shells[i+1]->animatedTransform = curve.shells[i]->animatedTransform * glm::inverse(curve.shells[i]->transform) * relative;
-    }
+    if (!curve.tParams.empty())
+        for (int i = 0; i < curve.tParams.size() - 1; ++i)
+        {
+            float currentState = getCurrentState(curve.extensionExtent, curve.numImpulses - 1, i);
+    
+            CurveSegment cs1 = curve.pSegments->at(i+1);
+            glm::vec3 position = curve.transformedHelixPoint(cs1, (1 - currentState) * -cs1.arcLength);
+            OrthonormalFrame f = transformedHelixFrame(cs1, (1 - currentState) * -cs1.arcLength);
+    
+            glm::mat4 relative = glm::mat4(glm::vec4(f.B, 0), glm::vec4(f.N, 0), glm::vec4(f.T, 0), glm::vec4(position, 1));
+            curve.shells[i+1]->animatedTransform = curve.shells[i]->animatedTransform * glm::inverse(curve.shells[i]->transform) * relative;
+        }
 
     for (unique_ptr<Shell> &pShell : curve.shells)
     {

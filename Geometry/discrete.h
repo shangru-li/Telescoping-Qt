@@ -23,31 +23,6 @@ public:
 
         return OrthonormalFrame(rotT, rotN, rotB);
     }
-
-    /*
-    static OrthonormalFrame Slerp(OrthonormalFrame frame1, OrthonormalFrame frame2, float t)
-    {
-        glm::vec3 tangent1 = frame1.T;
-        glm::vec3 tangent2 = frame2.T;
-        glm::fquat tangentQuat = glm::slerp(glm::fquat(tangent1.x, tangent1.y, tangent1.z, 0.0f),
-                                          glm::fquat(tangent2.x, tangent2.y, tangent2.z, 0.0f), t);
-        glm::vec3 tangent = glm::vec3(tangentQuat.x, tangentQuat.y, tangentQuat.z);
-
-        glm::vec3 binormal1 = frame1.B;
-        glm::vec3 binormal2 = frame2.B;
-        glm::fquat binormalQuat = glm::slerp(glm::fquat(binormal1.x, binormal1.y, binormal1.z, 0.0f),
-            glm::fquat(binormal2.x, binormal2.y, binormal2.z, 0.0f), t);
-        glm::vec3 binormal = glm::vec3(binormalQuat.x, binormalQuat.y, binormalQuat.z);
-
-        glm::vec3 normal1 = frame1.T;
-        glm::vec3 normal2 = frame2.T;
-        glm::fquat normalQuat = glm::slerp(glm::fquat(normal1.x, normal1.y, normal1.z, 0.0f),
-            glm::fquat(normal2.x, normal2.y, normal2.z, 0.0f), t);
-        glm::vec3 normal = glm::vec3(normalQuat.x, normalQuat.y, normalQuat.z);
-
-        return OrthonormalFrame(tangent, normal, binormal);
-    }
-    */
 };
 
 // User defined curve point
@@ -69,50 +44,6 @@ public:
 
     DCurvePoint(glm::vec3 dir, float bendAngle, float twistAngle) :
         binormal(dir), bendingAngle(bendAngle), twistingAngle(twistAngle) {}
-
-    /*
-    void ComputeFrenet(glm::vec3 prevPos, glm::vec3 nextPos)
-    {
-        pl(position, "pos");
-        glm::vec3 tangent = glm::normalize(nextPos - position);
-        glm::vec3 prevTangent = glm::normalize(position - prevPos);
-        glm::vec3 binormal = glm::normalize(glm::cross(prevTangent, tangent));
-
-        glm::vec3 normal = glm::cross(binormal, tangent);
-
-        frenetFrame = OrthonormalFrame(tangent, normal, binormal);
-    }
-
-    void ComputeFrenet(glm::vec3 prevPos, DCurvePoint next)
-    {
-        ComputeFrenet(prevPos, next.position);
-    }
-
-    void ComputeFrenet(DCurvePoint prev, DCurvePoint next)
-    {
-        ComputeFrenet(prev.position, next.position);
-    }
-
-    OrthonormalFrame PropagateBishop(glm::vec3 prevPos, glm::vec3 nextPos, OrthonormalFrame prevFrame)
-    {
-        glm::vec3 tangent = glm::normalize(nextPos - position);
-        glm::vec3 prevTangent = glm::normalize(position - prevPos);
-        glm::vec3 binormal = glm::normalize(glm::cross(prevTangent, tangent));
-
-        float angle = angleBetween(prevTangent, tangent, binormal);
-
-        glm::fquat rot = glm::angleAxis(glm::degrees(angle), binormal);
-
-        OrthonormalFrame rotated = prevFrame.RotateBy(rot);
-        bishopFrame = rotated;
-        return rotated;
-    }
-
-    OrthonormalFrame PropagateBishop(DCurvePoint prev, DCurvePoint next, OrthonormalFrame prevFrame)
-    {
-        return PropagateBishop(prev.position, next.position, prevFrame);
-    }
-    */
 };
 
 class CurveSegment
@@ -223,6 +154,7 @@ static glm::fquat rotateAlongHelix(float curvature, float torsion, float arcLeng
     {
         return rotateAlongCircle(curvature, arcLength);
     }
+
     // Torsion but no curvature = rotate about forward axis in a screw motion
     if (curvature < 1e-6)
     {
@@ -236,10 +168,6 @@ static glm::fquat rotateAlongHelix(float curvature, float torsion, float arcLeng
     glm::fquat correctiveR = glm::inverse(lookRotation(zeroFrame.T, zeroFrame.N));
 
     OrthonormalFrame frame = frameAlongHelix(curvature, torsion, arcLength);
-
-    // Corrective rotation so that initial tangent is forward.
-    //Quaternion r = Quaternion.FromToRotation(Vector3.forward, Vector3.down);
-
     return correctiveR * lookRotation(frame.T, frame.N);
 }
 

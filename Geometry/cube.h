@@ -7,6 +7,7 @@
 
 #define SIZE 0.5f
 
+class Curve;
 class Cube
 {
 public:
@@ -19,7 +20,12 @@ public:
     bool selected;
     int type;
 
-    enum CUBETYPE {RED, GREEN, BLUE, NORMAL, GENERATOR};
+    Cube *rootCube, *parentJuncture;
+    Curve *parentCurve;
+
+    enum CUBETYPE {RED, GREEN, BLUE, NORMAL, GENERATOR, JUNCTURE};
+
 };
 
+bool isOperatingCube(const Cube &c);
 #endif // CUBE_H

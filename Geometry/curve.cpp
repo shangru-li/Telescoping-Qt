@@ -4,7 +4,8 @@
 #include "global.h"
 
 
-Shell::Shell(GLContext *context): Drawable(context), transform(glm::mat4(1.f)), animatedTransform(glm::mat4(1.f)) {}
+Shell::Shell(GLContext *context)
+    : Drawable(context), transform(glm::mat4(1.f)), animatedTransform(glm::mat4(1.f)), junctureAnimatedTransform(glm::mat4(1.f)) {}
 
 void Shell::createGeometry()
 {
@@ -47,9 +48,14 @@ void Shell::addCylinder(const std::vector<std::vector<glm::vec4>> &cylinder, glm
 }
 
 int Curve::numImpulses = 10;
-Curve::Curve(GLContext *context): Drawable(context), points(nullptr),
+Curve::Curve(GLContext *context, Cube *parentCube, Cube *childCube): Drawable(context), points(nullptr),
     hasAssigned(false), hasTelescope(false), pSegments(nullptr),
-    extensionState(EXTENDED), extensionExtent(1.f) {}
+    extensionState(EXTENDED), extensionExtent(1.f),
+    parentCube(parentCube), childCube(childCube)
+{
+    for (int i = 0; i < numImpulses; ++i)
+        shells.push_back(make_unique<Shell>(context));
+}
 
 void Curve::createGeometry()
 {
@@ -57,7 +63,7 @@ void Curve::createGeometry()
     vertexBuffer.clear();
     if (points && points->size() > 1)
     {
-        for(unsigned int i = 0; i < points->size() - 1; ++i)
+        for (unsigned int i = 0; i < points->size() - 1; ++i)
         {
             indexBuffer.push_back(i);
             indexBuffer.push_back(i + 1);
@@ -264,7 +270,6 @@ void Curve::makeImpulseCurve()
         std::cout<<"Initial frame error!"<<std::endl;
     }
 
-    // vector<glm::vec4> newPoints;
     pSegments = make_unique<vector<CurveSegment>>();
     
     // Create initial segment
@@ -325,7 +330,6 @@ void Curve::makeShells()
 {
     for (int i = 0; i < tParams.size(); ++i)
     {
-        tParams[i].shellNumber = i;
         glm::vec4 color1 = glm::vec4(1, 0.6, 0.6, 1), color2 = glm::vec4(0.6, 0.6, 1, 1);
         shells[i]->addCylinder(generateCylinder(tParams[i]), i % 2 ? color1 : color2);
         OrthonormalFrame f = tParams[i].frame;
@@ -465,6 +469,51 @@ glm::mat3 Curve::childBasedRotation(CurveSegment parent, CurveSegment child)
     return glm::mat3_cast(rotationToBase * rotationBack);
 }
 
+
+float getCurrentState(float t, int num, int grid)
+{
+    float step = 1.f / num;
+    int currNum = t / step;
+    if (grid < currNum) return 1;
+    if (grid > currNum) return 0;
+    return (t - currNum * step) / step;
+}
+
+void Curve::updateSegmentTransforms()
+{
+    if (!tParams.empty())
+    {
+        for (int i = 0; i < tParams.size() - 1; ++i)
+        {
+            float currentState = getCurrentState(extensionExtent, numImpulses - 1, i);
+
+            CurveSegment cs1 = pSegments->at(i+1);
+            glm::vec3 position = transformedHelixPoint(cs1, (1 - currentState) * -cs1.arcLength);
+            OrthonormalFrame f = transformedHelixFrame(cs1, (1 - currentState) * -cs1.arcLength);
+
+            glm::mat4 relative = glm::mat4(glm::vec4(f.B, 0), glm::vec4(f.N, 0), glm::vec4(f.T, 0), glm::vec4(position, 1));
+            shells[i+1]->animatedTransform = shells[i]->animatedTransform * glm::inverse(shells[i]->transform) * relative;
+        }
+        Curve *parentCurve = parentCube->parentCurve;
+        if (parentCurve)
+        {
+            glm::mat4 parentTransform = parentCurve->shells.back()->transform;
+            glm::mat4 parentAnimatedTransform = parentCurve->shells.back()->junctureAnimatedTransform;
+            for (unique_ptr<Shell> &pShell: shells)
+            {
+                pShell->junctureAnimatedTransform = parentAnimatedTransform * glm::inverse(parentTransform) * pShell->animatedTransform;
+            }
+        }
+        else
+        {
+            for (unique_ptr<Shell> &pShell: shells)
+            {
+                pShell->junctureAnimatedTransform = pShell->animatedTransform;
+            }
+        }
+    }
+}
+
 void Curve::reAssignPoints()
 {
     if (hasAssigned) return;
@@ -515,3 +564,77 @@ void Curve::reAssignPoints()
     points->insert(points->end(), newPoints.begin(), newPoints.end());
 }
 
+
+
+
+
+
+void Curve::generateKeys()
+{
+    keys.clear();
+    for (int i = 0; i < curveCubes.size(); ++i)
+    {
+        Cube *c = curveCubes[i];
+        if (!isOperatingCube(*c))
+        {
+            keys.push_back(c->transform * _black);
+        }
+    }
+}
+
+void Curve::computeCtrlPoints()
+{
+    ctrlPoints.clear();
+    if (keys.size() <= 1) return;
+    glm::vec4 startPoint = keys[0] + 0.25f * (keys[0] - keys[1]);
+    glm::vec4 endPoint = keys[keys.size() - 1] + 0.25f * (keys[keys.size() - 1] - keys[keys.size() - 2]);
+    for (int i = 1; i < keys.size(); ++i)
+    {
+        glm::vec4 b0, b1, b2, b3, t0, t3;
+        b0 = keys[i - 1], b3 = keys[i];
+        if (i == 1) t0 = (keys[i] - startPoint) / 2.f;
+        else t0 = (keys[i] - keys[i - 2]) / 2.f;
+        b1 = b0 + t0 / 3.f;
+        if (i == keys.size() - 1) t3 = (endPoint - keys[i - 1]) / 2.f;
+        else t3 = (keys[i + 1] - keys[i - 1]) / 2.f;
+        b2 = b3 - t3 / 3.f;
+        std::vector<glm::vec4> v{b0, b1, b2, b3};
+        ctrlPoints.insert(ctrlPoints.end(), v.begin(), v.end());
+    }
+}
+
+void Curve::interpolate()
+{
+    curve.clear();
+    if (keys.size() <= 1) return;
+    for (int segment = 0; segment < keys.size() - 1; ++segment)
+    {
+        for (float t = 0.f; t < 1.f - std::numeric_limits<float>::min(); t += 0.01f)
+        {
+            curve.push_back(interpolateSegment(segment, t));
+        }
+    }
+    curve.push_back(interpolateSegment(keys.size() - 2, 1.f));
+}
+
+glm::vec4 Curve::interpolateSegment(int segment, float t)
+{
+    glm::vec4 b0 = ctrlPoints[segment * 4 + 0],
+            b1 = ctrlPoints[segment * 4 + 1],
+            b2 = ctrlPoints[segment * 4 + 2],
+            b3 = ctrlPoints[segment * 4 + 3],
+            p00 = b0 + (b1 - b0) * t,
+            p10 = b1 + (b2 - b1) * t,
+            p20 = b2 + (b3 - b2) * t,
+            p01 = p00 + (p10 - p00) * t,
+            p11 = p10 + (p20 - p10) * t,
+            p02 = p01 + (p11 - p01) * t;
+    return p02;
+}
+
+void Curve::updateCurve()
+{
+    generateKeys();
+    computeCtrlPoints();
+    interpolate();
+}

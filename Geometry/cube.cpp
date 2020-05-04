@@ -1,9 +1,8 @@
 #include "cube.h"
 
-Cube::Cube(glm::mat4 transform, int type): transform(transform), selected(false), type(type)
-{
-
-}
+Cube::Cube(glm::mat4 transform, int type)
+    : transform(transform), selected(false), type(type), rootCube(nullptr), parentJuncture(nullptr), parentCurve(nullptr)
+{}
 
 bool Cube::intersect(const Ray &r, Intersection &i)
 {
@@ -33,4 +32,9 @@ bool Cube::intersect(const Ray &r, Intersection &i)
     i.point = transform * localPoint;
     i.cubeHit = this;
     i.t = t;
+}
+
+bool isOperatingCube(const Cube &c)
+{
+    return c.type == Cube::RED || c.type == Cube::GREEN || c.type == Cube::BLUE;
 }

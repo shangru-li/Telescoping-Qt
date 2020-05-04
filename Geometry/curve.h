@@ -3,6 +3,7 @@
 
 #include "drawable.h"
 #include "discrete.h"
+#include "cubearray.h"
 class Shell : public Drawable
 {
 public:
@@ -17,13 +18,13 @@ public:
 
     vector<vector<vector<glm::vec4>>> cylinders;
 
-    glm::mat4 transform, animatedTransform;
+    glm::mat4 transform, animatedTransform, junctureAnimatedTransform;
 };
 
 class Curve : public Drawable
 {
 public:
-    Curve(GLContext *context);
+    Curve(GLContext *context, Cube *parentCube, Cube *childCube);
     vector<glm::vec4> *points;
     vector<DCurvePoint> discretePoints;
     vector<glm::vec4> torsionImpulsePoints;
@@ -47,14 +48,14 @@ public:
     float arcLength;
 
     void makeImpulseCurve();
-
     void makeTelescope();
     void makeShells();
+
     vector<vector<glm::vec4>> generateCylinder(TelescopeParameters tParams, float nextRadius = 0.f);
     vector<glm::vec4> generateCircle(int circNum, glm::vec3 centerPoint, glm::vec3 direction,
                         glm::vec3 normal, float radius);
-    int VERTS_PER_CIRCLE = 100;
-    int CUTS_PER_CYLINDER = 40;
+    int VERTS_PER_CIRCLE = 30;//100;
+    int CUTS_PER_CYLINDER = 10;//40;
     glm::fquat getLocalRotationAlongPath(float t, float curvature, float torsion, float length);
     vector<unique_ptr<Shell>> shells;
 
@@ -68,12 +69,10 @@ public:
 
     float segmentLength;
 
-    // glm::vec3 reconstructFromAngles();
     void reAssignPoints();
 
     unique_ptr<vector<CurveSegment>> pSegments;
 
-    // Calculate arc length
     float calcArcLength();
 
     void AddPointsOfSegment(CurveSegment seg);
@@ -84,6 +83,20 @@ public:
 
     glm::vec3 childBasedPosition(CurveSegment parent, CurveSegment child);
     glm::mat3 childBasedRotation(CurveSegment parent, CurveSegment child);
+    void updateSegmentTransforms();
+
+
+
+    std::vector<glm::vec4> keys, ctrlPoints, curve;
+    void updateCurve();
+    // interpolation
+    void generateKeys();
+    void computeCtrlPoints();
+    void interpolate();
+    glm::vec4 interpolateSegment(int segment, float t);
+    Cube *parentCube, *childCube;
+    vector<Cube *> curveCubes;
+    vector<Curve *> childrenCurves;
 };
 
 

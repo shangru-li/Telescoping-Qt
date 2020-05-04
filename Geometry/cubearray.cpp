@@ -19,7 +19,7 @@ void CubeArray::createGeometry()
     for (int i = 0; i < cubes.size(); )
     {
         Cube *c = cubes[i].get();
-        if (c->type != Cube::NORMAL && c->type != Cube::GENERATOR) cubes.erase(cubes.begin() + i);
+        if (isOperatingCube(*c)) cubes.erase(cubes.begin() + i);
         else ++i;
     }
 
@@ -37,7 +37,13 @@ void CubeArray::createGeometry()
             blueArrow = std::make_unique<Cube>(c->transform * glm::translate(glm::scale(glm::mat4(1.f), glm::vec3(0.3f, 0.3f, 0.3f)), glm::vec3(0, 0, 5)), Cube::BLUE);
             addColoredCube(blueArrow.get(), _blue, false);
         }
-        else addColoredCube(c, _grey, false);
+        else switch (c->type)
+        {
+        case Cube::JUNCTURE: addColoredCube(c, _black, false); break;
+        case Cube::GENERATOR: addColoredCube(c, _purple, false); break;
+        case Cube::NORMAL: addColoredCube(c, _grey, false); break;
+        }
+
     }
 
     if (redArrow && greenArrow && blueArrow)
@@ -48,9 +54,13 @@ void CubeArray::createGeometry()
     }
 }
 
-void CubeArray::addCube(glm::mat4 transform, int type)
+Cube &CubeArray::addCube(glm::mat4 transform, Cube *rootCube, int type)
 {
-    cubes.push_back(std::make_unique<Cube>(transform, type));
+    std::unique_ptr<Cube> pCube = std::make_unique<Cube>(transform, type);
+    Cube &cube = *pCube;
+    cube.rootCube = rootCube;
+    cubes.push_back(std::move(pCube));
+    return cube;
 }
 
 bool CubeArray::intersect(const Ray &r, Intersection &intersection) const
@@ -65,76 +75,6 @@ bool CubeArray::intersect(const Ray &r, Intersection &intersection) const
     if (intersection.cubeHit) return true;
     intersection.t = 0.f;
     return false;
-}
-
-void CubeArray::generateKeys()
-{
-    keys.clear();
-    for (int i = 0; i < cubes.size(); ++i)
-    {
-        Cube *c = cubes[i].get();
-        if (c->type == Cube::NORMAL || c->type == Cube::GENERATOR)
-        {
-            keys.push_back(c->transform * _black);
-        }
-    }
-}
-
-void CubeArray::computeCtrlPoints()
-{
-    ctrlPoints.clear();
-    if (keys.size() <= 1) return;
-    glm::vec4 startPoint = keys[0] + 0.25f * (keys[0] - keys[1]);
-    glm::vec4 endPoint = keys[keys.size() - 1] + 0.25f * (keys[keys.size() - 1] - keys[keys.size() - 2]);
-    for (int i = 1; i < keys.size(); ++i)
-    {
-        glm::vec4 b0, b1, b2, b3, t0, t3;
-        b0 = keys[i - 1], b3 = keys[i];
-        if (i == 1) t0 = (keys[i] - startPoint) / 2.f;
-        else t0 = (keys[i] - keys[i - 2]) / 2.f;
-        b1 = b0 + t0 / 3.f;
-        if (i == keys.size() - 1) t3 = (endPoint - keys[i - 1]) / 2.f;
-        else t3 = (keys[i + 1] - keys[i - 1]) / 2.f;
-        b2 = b3 - t3 / 3.f;
-        std::vector<glm::vec4> v{b0, b1, b2, b3};
-        ctrlPoints.insert(ctrlPoints.end(), v.begin(), v.end());
-    }
-}
-
-void CubeArray::interpolate()
-{
-    curve.clear();
-    if (keys.size() <= 1) return;
-    for (int segment = 0; segment < keys.size() - 1; ++segment)
-    {
-        for (float t = 0.f; t < 1.f - std::numeric_limits<float>::min(); t += 0.01f)
-        {
-            curve.push_back(interpolateSegment(segment, t));
-        }
-    }
-    curve.push_back(interpolateSegment(keys.size() - 2, 1.f));
-}
-
-glm::vec4 CubeArray::interpolateSegment(int segment, float t)
-{
-    glm::vec4 b0 = ctrlPoints[segment * 4 + 0],
-            b1 = ctrlPoints[segment * 4 + 1],
-            b2 = ctrlPoints[segment * 4 + 2],
-            b3 = ctrlPoints[segment * 4 + 3],
-            p00 = b0 + (b1 - b0) * t,
-            p10 = b1 + (b2 - b1) * t,
-            p20 = b2 + (b3 - b2) * t,
-            p01 = p00 + (p10 - p00) * t,
-            p11 = p10 + (p20 - p10) * t,
-            p02 = p01 + (p11 - p01) * t;
-    return p02;
-}
-
-void CubeArray::updateCurve()
-{
-    generateKeys();
-    computeCtrlPoints();
-    interpolate();
 }
 
 void CubeArray::addColoredCube(Cube *c, glm::vec4 color, bool isColorful)

@@ -30,6 +30,8 @@ public:
     void mouseMoveEvent(QMouseEvent *e);
     void mouseReleaseEvent(QMouseEvent *e);
 
+    void updateSelectedCube(Cube *newSelected);
+
     // move control
     glm::vec2 moveControlVector, pressPoint;
     glm::vec4 offsetVector;
@@ -37,7 +39,7 @@ public:
     bool movingCube;
 
     // cube generation
-    bool canGenerate;
+    bool canGenerate, canGenerateJuncture;
 
     glm::vec4 getScreenCoords(glm::vec4 pointWorld);
     glm::vec4 getWorldCoords(glm::vec4 pointScreen);
@@ -46,8 +48,9 @@ public:
     SquarePlane squarePlane;
 
     CubeArray cubeArray;
-    Cube *selectedCube;
-    Curve curve;
+    Cube *selectedCube, *currentJuncture;
+    vector<unique_ptr<Curve>> curves;
+    Curve &addCurve(Cube *parentCube, Cube *childCube);
 
     ShaderProgram shaderProgram, shaderProgramFlat;
 
@@ -56,6 +59,8 @@ public:
     float fps;
 
     std::array<bool, 256> keyboardStates;
+
+
 
     // Stage control
     bool discreteStage;

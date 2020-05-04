@@ -96,6 +96,15 @@ void GLContext::paintGL()
     }
 }
 
+void makeChildrenTelescopes(Curve &curve)
+{
+    for (Curve *child: curve.childrenCurves)
+    {
+        child->makeTelescope(curve.endRadius);
+        makeChildrenTelescopes(*child);
+    }
+}
+
 void GLContext::keyPressEvent(QKeyEvent *e)
 {
     // from a to z
@@ -147,7 +156,14 @@ void GLContext::keyPressEvent(QKeyEvent *e)
     }
     if (e->key() == 'I')
     {
-        for (unique_ptr<Curve> &curve: curves) curve->makeTelescope();
+        for (unique_ptr<Curve> &curve: curves)
+        {
+            if (!curve->parentCube->parentCurve)
+            {
+                curve->makeTelescope();
+                makeChildrenTelescopes(*curve);
+            }
+        }
     }
     if (e->key() == 'Z')
     {

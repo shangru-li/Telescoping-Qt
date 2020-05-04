@@ -48,7 +48,7 @@ public:
     float arcLength;
 
     void makeImpulseCurve();
-    void makeTelescope();
+    void makeTelescope(float radius = 0.8f);
     void makeShells();
 
     vector<vector<glm::vec4>> generateCylinder(TelescopeParameters tParams, float nextRadius = 0.f);
@@ -97,6 +97,7 @@ public:
     Cube *parentCube, *childCube;
     vector<Cube *> curveCubes;
     vector<Curve *> childrenCurves;
+    float endRadius;
 };
 
 

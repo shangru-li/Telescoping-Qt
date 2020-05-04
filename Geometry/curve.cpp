@@ -51,7 +51,7 @@ int Curve::numImpulses = 10;
 Curve::Curve(GLContext *context, Cube *parentCube, Cube *childCube): Drawable(context), points(nullptr),
     hasAssigned(false), hasTelescope(false), pSegments(nullptr),
     extensionState(EXTENDED), extensionExtent(1.f),
-    parentCube(parentCube), childCube(childCube)
+    parentCube(parentCube), childCube(childCube), endRadius(0.8f)
 {
     for (int i = 0; i < numImpulses; ++i)
         shells.push_back(make_unique<Shell>(context));
@@ -302,12 +302,12 @@ void Curve::makeImpulseCurve()
     this->points->insert(this->points->end(), torsionImpulsePoints.begin(), torsionImpulsePoints.end());
 }
 
-void Curve::makeTelescope()
+void Curve::makeTelescope(float radius)
 {
     if (hasTelescope || !pSegments) return;
     hasTelescope = true;
 
-    float currRadius = 0.8f, WALL_THICKNESS = 0.08f;
+    float currRadius = radius, WALL_THICKNESS = 0.05f;
     tParams.clear();
 
     CurveSegment initialSeg = pSegments->at(0);
@@ -322,6 +322,8 @@ void Curve::makeTelescope()
                               WALL_THICKNESS, pSegments->at(i).curvature, pSegments->at(i).torsion, 0, pSegments->at(i).startPosition, pSegments->at(i).frame);
         tParams.push_back(p);
     }
+
+    endRadius = currRadius;
 
     makeShells();
 }

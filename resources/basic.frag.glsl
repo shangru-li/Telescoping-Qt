@@ -13,7 +13,7 @@ void main()
 
     int blinnExp = 20;
     float specularIntensity = max(pow(dot(fs_LightVector, fs_Normal), blinnExp), 0);
-    float specularTerm = specularIntensity * 20;
+    float specularTerm = specularIntensity * 10;
     specularTerm = clamp(specularTerm, 0, 1);
 
     float ambientTerm = 0.2;

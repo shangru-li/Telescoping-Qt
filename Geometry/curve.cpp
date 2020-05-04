@@ -307,8 +307,24 @@ void Curve::makeTelescope(float radius)
     if (hasTelescope || !pSegments) return;
     hasTelescope = true;
 
-    float currRadius = radius, WALL_THICKNESS = 0.05f;
+    float currRadius = radius, WALL_THICKNESS = radius / 1.5f / (Curve::numImpulses - 1);
+    pl(WALL_THICKNESS);
     tParams.clear();
+
+    if (parentCube->parentCurve)
+    {
+        CurveSegment lastShell = parentCube->parentCurve->pSegments->back();
+        glm::vec3 offset = translateAlongHelix(lastShell.curvature, lastShell.torsion, lastShell.arcLength);
+        glm::mat3 frame = glm::mat3_cast(rotateAlongHelix(lastShell.curvature, lastShell.torsion, lastShell.arcLength));
+        glm::mat4 localFrame(glm::vec4(frame[0], 0), glm::vec4(frame[1], 0), glm::vec4(frame[2], 0), glm::vec4(offset, 1));
+
+        glm::vec4 ref = parentCube->parentCurve->shells.back()->transform * localFrame * _black;
+        glm::vec3 diff = glm::vec3(ref) - pSegments->at(0).startPosition;
+        for (CurveSegment &cs: *pSegments)
+        {
+            cs.startPosition += diff;
+        }
+    }
 
     CurveSegment initialSeg = pSegments->at(0);
     TelescopeParameters inital(initialSeg.arcLength, currRadius,
@@ -472,8 +488,9 @@ glm::mat3 Curve::childBasedRotation(CurveSegment parent, CurveSegment child)
 }
 
 
-float getCurrentState(float t, int num, int grid)
+float getCurrentState(float t, int num, int grid, bool junctureMode = false)
 {
+    if (junctureMode && grid == 0) return 1;
     float step = 1.f / num;
     int currNum = t / step;
     if (grid < currNum) return 1;
@@ -487,7 +504,9 @@ void Curve::updateSegmentTransforms()
     {
         for (int i = 0; i < tParams.size() - 1; ++i)
         {
-            float currentState = getCurrentState(extensionExtent, numImpulses - 1, i);
+            float currentState = getCurrentState(extensionExtent, numImpulses - 1, i, true);
+            currentState *= 3.f;
+            if (currentState > 1.f) currentState = 1.f;
 
             CurveSegment cs1 = pSegments->at(i+1);
             glm::vec3 position = transformedHelixPoint(cs1, (1 - currentState) * -cs1.arcLength);

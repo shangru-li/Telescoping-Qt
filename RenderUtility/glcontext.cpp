@@ -84,7 +84,7 @@ void GLContext::paintGL()
 
     shaderProgram.setCamPos(glm::vec4(camera->eye, 1));
     shaderProgramFlat.setModelViewProj(camera->getViewProj());
-    shaderProgramFlat.draw(cubeArray);
+    if (!discreteStage) shaderProgramFlat.draw(cubeArray);
     for (unique_ptr<Curve> &curve: curves)
     {
         shaderProgramFlat.draw(*curve);
@@ -102,6 +102,18 @@ void makeChildrenTelescopes(Curve &curve)
     {
         child->makeTelescope(curve.endRadius);
         makeChildrenTelescopes(*child);
+    }
+}
+void alignChildren(Curve &curve)
+{
+    for (Curve *child: curve.childrenCurves)
+    {
+        glm::vec4 offset = curve.points->back() - child->points->front();
+        for (glm::vec4 &point: *child->points)
+        {
+            point += offset;
+        }
+        alignChildren(*child);
     }
 }
 
@@ -153,6 +165,16 @@ void GLContext::keyPressEvent(QKeyEvent *e)
     {
         for (unique_ptr<Curve> &curve: curves) curve->makeImpulseCurve();
         torsionStage = true;
+    }
+    if (e->key() == 'K')
+    {
+        for (unique_ptr<Curve> &curve: curves)
+        {
+            if (!curve->parentCube->parentCurve)
+            {
+                alignChildren(*curve);
+            }
+        }
     }
     if (e->key() == 'I')
     {
@@ -276,6 +298,10 @@ void GLContext::timerUpdate()
     if (keyboardStates['S']) camera->rotateSpherical(-rotateDegree, camera->right);
     if (keyboardStates['Q']) camera->zoom(-zoomLength);
     if (keyboardStates['E']) camera->zoom(zoomLength);
+    if (keyboardStates['H']) camera->pan(camera->up);
+    if (keyboardStates['N']) camera->pan(-camera->up);
+    if (keyboardStates['B']) camera->pan(-camera->right);
+    if (keyboardStates['M']) camera->pan(camera->right);
 
     for (unique_ptr<Curve> &curve: curves)
         if (curve->extensionState == Curve::EXTENDING)

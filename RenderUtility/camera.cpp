@@ -39,6 +39,13 @@ void Camera::zoom(float length)
     eye = eye + front * length;
 }
 
+void Camera::pan(glm::vec3 direction)
+{
+    float speed = 0.2f;
+    eye += direction * speed;
+    ref += direction * speed;
+}
+
 Ray Camera::castRay(float x, float y)
 {
     glm::vec4 farPoint(x, y, 1, 1);

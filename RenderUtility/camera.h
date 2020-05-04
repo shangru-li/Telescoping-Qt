@@ -11,6 +11,7 @@ public:
 
     void rotateSpherical(float deg, glm::vec3 axis);
     void zoom(float length);
+    void pan(glm::vec3 direction);
 
     Ray castRay(float x, float y);
 
